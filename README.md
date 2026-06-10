@@ -216,6 +216,63 @@ test('render with inputs', async () => {
 
 Works with both signal-based inputs (`input()`) and `@Input()` decorators.
 
+## Outputs
+
+Subscribe to component outputs using the `outputs` option:
+
+```ts
+import { Component, output } from '@angular/core';
+import { vi } from 'vitest';
+
+@Component({
+  template: '<button (click)="send.emit()">Send</button>',
+  standalone: true,
+})
+export class MessageComponent {
+  send = output<void>();
+}
+
+test('render with outputs', async () => {
+  const sendHandler = vi.fn();
+  const { locator } = await render(MessageComponent, {
+    outputs: {
+      send: sendHandler,
+    },
+  });
+
+  await locator.getByRole('button', { name: 'Send' }).click();
+  expect(sendHandler).toHaveBeenCalled();
+});
+```
+
+Handlers receive the emitted value, so you can assert on the payload:
+
+```ts
+@Component({
+  template: '<button (click)="save.emit({ id: 1 })">Save</button>',
+  standalone: true,
+})
+export class SaveComponent {
+  save = output<{ id: number }>();
+}
+
+test('assert on output payload', async () => {
+  const saveHandler = vi.fn();
+  const { locator } = await render(SaveComponent, {
+    outputs: {
+      save: saveHandler,
+    },
+  });
+
+  await locator.getByRole('button', { name: 'Save' }).click();
+  expect(saveHandler).toHaveBeenCalledWith({ id: 1 });
+});
+```
+
+Works with signal-based outputs (`output()`).
+
+When using `withRouting`, outputs cannot be passed directly to `render()`.
+
 ## Routing
 
 ### Simple Routing
