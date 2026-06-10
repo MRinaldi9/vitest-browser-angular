@@ -1,5 +1,15 @@
 # vitest-browser-angular
 
+## 0.5.0
+
+### Minor Changes
+
+- ✨ Add support for Angular 22 (by [@shairez](https://github.com/shairez) in [#30](https://github.com/vitest-community/vitest-browser-angular/pull/30))
+
+- ✨ implemented output bindings for render function component (by [@MRinaldi9](https://github.com/MRinaldi9) in [#27](https://github.com/vitest-community/vitest-browser-angular/pull/27))
+  - refactor input bindings for dynamic updates using signals
+  - added test cases for output bindings and dynamic input updates
+
 ## 0.4.0
 
 ### Minor Changes
