@@ -1,6 +1,7 @@
 import type {
   EnvironmentProviders,
   InputSignal,
+  OutputEmitterRef,
   Provider,
   Type,
 } from "@angular/core";
@@ -8,6 +9,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   inputBinding,
+  isSignal,
+  outputBinding,
 } from "@angular/core";
 import {
   type ComponentFixture,
@@ -93,6 +96,18 @@ export type Inputs<CMP_TYPE extends Type<unknown>> = Partial<{
     : never;
 }>;
 
+export type OutputKeys<CMP_TYPE extends Type<unknown>> = {
+  [PROP in keyof InstanceType<CMP_TYPE>]: InstanceType<CMP_TYPE>[PROP] extends OutputEmitterRef<unknown>
+    ? PROP
+    : never;
+}[keyof InstanceType<CMP_TYPE>];
+
+export type Outputs<CMP extends Type<unknown>> = Partial<{
+  [K in OutputKeys<CMP>]: InstanceType<CMP>[K] extends OutputEmitterRef<infer T>
+    ? (value: T) => void
+    : never;
+}>;
+
 /**
  * Options for rendering a component with `render()`.
  */
@@ -109,6 +124,13 @@ export interface ComponentRenderOptions<
    * Use route `data` instead.
    */
   inputs?: Inputs<CMP_TYPE>;
+
+  /**
+   * Output emitters to pass to the component.
+   *
+   * Note: When using `withRouting`, outputs cannot be passed directly.
+   */
+  outputs?: Outputs<CMP_TYPE>;
 
   /**
    * Enable Angular Router support for the component.
@@ -310,9 +332,7 @@ export async function render<T>(
     componentClassInstance = routerHarness.routeDebugElement
       ?.componentInstance as T;
   } else {
-    const bindings = Object.entries(options?.inputs ?? {}).map(([key, value]) =>
-      inputBinding(key, () => value),
-    );
+    const bindings = createBindingsComponent(options?.inputs, options?.outputs);
 
     fixture = TestBed.createComponent(componentClass, { bindings });
     container = fixture.nativeElement;
@@ -452,4 +472,17 @@ export async function renderDirective<T>(
 
 export function cleanup(shouldTeardown = false) {
   return getCleanupHook(shouldTeardown)();
+}
+
+function createBindingsComponent<C extends Type<unknown>>(
+  inputsBinding: Inputs<C> = {},
+  outputsBinding: Outputs<C> = {},
+) {
+  const inputBindings = Object.entries(inputsBinding).map(([key, value]) =>
+    inputBinding(key, isSignal(value) ? value : () => value),
+  );
+  const outputBindings = Object.entries(outputsBinding).map(([key, value]) =>
+    outputBinding(key, value as (v: unknown) => unknown),
+  );
+  return [...inputBindings, ...outputBindings];
 }
