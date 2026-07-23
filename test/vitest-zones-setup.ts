@@ -4,5 +4,5 @@ import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
 
 setupTestBed({
   zoneless: false,
-  browserMode: true,
+  teardown: { destroyAfterEach: false },
 });

@@ -110,13 +110,13 @@ To preview, debug and interact with a component in the browser after the test, y
 
 In Angular CLI, enable this using the `--debug` option.
 
-With the Analog plugin, enable this using the `browserMode` option of `setupTestBed()` in `test-setup.ts`:
+With the Analog plugin, enable this using the `teardown.destroyAfterEach` option of `setupTestBed()` in `test-setup.ts`:
 
 ```ts
 import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
 
 setupTestBed({
-  browserMode: true,
+  teardown: { destroyAfterEach: false },
 });
 ```
 
