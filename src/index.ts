@@ -1,19 +1,19 @@
-import { beforeEach } from "vitest";
-import { page } from "vitest/browser";
-import { cleanup, render } from "./pure";
-export type { Inputs, RenderConfig, RenderFn, RenderResult } from "./pure";
+import { beforeEach } from 'vitest';
+import { page } from 'vitest/browser';
+import { cleanup, render } from './pure';
+export type { Inputs, ComponentRenderOptions, RenderFn, RenderResult } from './pure';
 export { cleanup, render };
 
 page.extend({
   render,
-  [Symbol.for("vitest:component-cleanup")]: cleanup,
+  [Symbol.for('vitest:component-cleanup')]: cleanup,
 });
 
 beforeEach(async () => {
   await cleanup(true);
 });
 
-declare module "vitest/browser" {
+declare module 'vitest/browser' {
   interface BrowserPage {
     render: typeof render;
   }
