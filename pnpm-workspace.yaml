@@ -4,3 +4,8 @@ allowBuilds:
   lefthook: true
   lmdb: false
   msgpackr-extract: false
+minimumReleaseAgeExclude:
+  - '@analogjs/vite-plugin-angular@2.6.4'
+  - '@analogjs/vitest-angular@2.6.4'
+  - tsdown@0.22.14
+  - verkit@0.3.0
