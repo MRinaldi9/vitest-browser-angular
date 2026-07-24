@@ -1,5 +1,5 @@
 ---
-'vitest-browser-angular': minor
+'@mrinaldi/vitest-browser-angular': minor
 ---
 
 chore: Update to PNPM 11
