@@ -49,7 +49,7 @@ const { debug, getElementLocatorSelectors } = utils;
  *       initialRoute: '/profile',
  *     },
  *   });
- *   ```
+ *   ```;
  */
 export interface RoutingConfig {
   /** The route configuration to use. These routes are passed to `provideRouter()`. */
@@ -135,7 +135,7 @@ export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<un
    *       initialRoute: '/user/42',
    *     },
    *   });
-   *   ```
+   *   ```;
    */
   withRouting?: RoutingConfig | boolean;
 
@@ -189,7 +189,6 @@ export interface RenderResult<T> extends LocatorSelectors {
    *
    *   // Simple navigation
    *   await routerHarness.navigateByUrl('/about');
-   *   ```
    */
   routerHarness?: RouterTestingHarness;
 
@@ -199,9 +198,7 @@ export interface RenderResult<T> extends LocatorSelectors {
    * Useful for inspecting router state. For navigation, prefer `routerHarness.navigateByUrl()`.
    *
    * @example
-   *   ```typescript
    *   expect(router.url).toBe('/user/42');
-   *   ```
    */
   router?: Router;
 }
@@ -215,7 +212,7 @@ export type RenderFn = <T>(
  * Renders an Angular component for testing with Vitest Browser Mode.
  *
  * @example
- *   ```typescript
+ * ```typescript
  *   // Basic render
  *   const { locator } = await render(MyComponent);
  *   await expect.element(locator.getByText('Hello')).toBeVisible();
@@ -232,8 +229,7 @@ export type RenderFn = <T>(
  *       initialRoute: '/profile',
  *     },
  *   });
- *   ```
- *
+ *```
  * @param componentClass - The component class to render
  * @param options - Configuration options for rendering
  * @returns A promise that resolves to the render result with locators and component access
@@ -328,6 +324,17 @@ export function cleanup(shouldTeardown = false) {
   return getCleanupHook(shouldTeardown)();
 }
 
+/**
+ * @internal
+ * Builds binding configs for `TestBed.createComponent()` from the render options.
+ *
+ * Map entries through `inputBinding()` / `outputBinding()` — signal values are
+ * passed as-is, plain values are wrapped in a factory. Used when routing is off.
+ *
+ * @param inputsBinding Signal input values keyed by component property
+ * @param outputsBinding Output handler functions keyed by component property
+ * @returns Flat binding array for `TestBed.createComponent({ bindings })`
+ */
 function createBindingsComponent<C extends Type<unknown>>(
   inputsBinding: Inputs<C> = {},
   outputsBinding: Outputs<C> = {},
