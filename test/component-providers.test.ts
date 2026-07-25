@@ -11,9 +11,7 @@ describe('componentProviders', () => {
       componentProviders: [GreetingService],
     });
 
-    await expect
-      .element(component.getByTestId('greeting'))
-      .toHaveTextContent('Hello, World!');
+    await expect.element(component.getByTestId('greeting')).toHaveTextContent('Hello, World!');
     await expect
       .element(component.getByTestId('message'))
       .toHaveTextContent('This component uses injected services');
@@ -68,8 +66,6 @@ describe('componentProviders', () => {
       ],
     });
 
-    await expect
-      .element(component.getByTestId('greeting'))
-      .toHaveTextContent('Greetings, World!');
+    await expect.element(component.getByTestId('greeting')).toHaveTextContent('Greetings, World!');
   });
 });

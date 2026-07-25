@@ -11,8 +11,7 @@ describe('Zoneless Tests', () => {
   });
 
   test('updated count after 1 second, but not reflected in the DOM', async () => {
-    const { componentClassInstance, component } =
-      await render(ZonelessComponent);
+    const { componentClassInstance, component } = await render(ZonelessComponent);
     const countElement = component.getByTestId('count');
     expect(componentClassInstance.count).toBe(0);
 
@@ -22,8 +21,7 @@ describe('Zoneless Tests', () => {
   });
 
   test('updated count with button clicks and reflected in the DOM', async () => {
-    const { componentClassInstance, component, fixture } =
-      await render(ZonelessComponent);
+    const { componentClassInstance, component, fixture } = await render(ZonelessComponent);
     const countElement = component.getByTestId('count');
     expect(componentClassInstance.count).toBe(0);
 

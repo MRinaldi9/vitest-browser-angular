@@ -19,13 +19,9 @@ test('render with inputs (signal-based)', async () => {
     },
   });
 
-  await expect
-    .element(locator.getByRole('heading', { name: 'Jane Doe' }))
-    .toBeVisible();
+  await expect.element(locator.getByRole('heading', { name: 'Jane Doe' })).toBeVisible();
   await expect.element(locator.getByText('Age: 30')).toBeVisible();
-  await expect
-    .element(locator.getByText('Email: jane@example.com'))
-    .toBeVisible();
+  await expect.element(locator.getByText('Email: jane@example.com')).toBeVisible();
   await expect.element(locator.getByText('Status: Active')).toBeVisible();
   await expect
     .element(locator.getByText('Jane Doe (30 years old) - jane@example.com'))
@@ -42,14 +38,10 @@ test('render with inputs (@Input decorator)', async () => {
     },
   });
 
-  await expect
-    .element(locator.getByRole('heading', { name: 'Laptop' }))
-    .toBeVisible();
+  await expect.element(locator.getByRole('heading', { name: 'Laptop' })).toBeVisible();
   await expect.element(locator.getByText('Price: $1299.99')).toBeVisible();
   await expect.element(locator.getByText('In Stock: Yes')).toBeVisible();
-  await expect
-    .element(locator.getByText('Category: Electronics'))
-    .toBeVisible();
+  await expect.element(locator.getByText('Category: Electronics')).toBeVisible();
 });
 
 test('render with outputs', async () => {
@@ -70,11 +62,7 @@ test('render with dynamic inputs signal', async () => {
       name,
     },
   });
-  await expect
-    .element(locator.getByRole('heading', { name: 'John Doe' }))
-    .toBeVisible();
+  await expect.element(locator.getByRole('heading', { name: 'John Doe' })).toBeVisible();
   name.set('Jane Smith');
-  await expect
-    .element(locator.getByRole('heading', { name: 'Jane Smith' }))
-    .toBeVisible();
+  await expect.element(locator.getByRole('heading', { name: 'Jane Smith' })).toBeVisible();
 });

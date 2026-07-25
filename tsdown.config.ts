@@ -6,5 +6,5 @@ export default defineConfig({
   outDir: './dist',
   minify: true,
   exports: true,
-  dts: true,
+  dts: { build: true },
 });

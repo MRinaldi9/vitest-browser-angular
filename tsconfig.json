@@ -1,24 +1,8 @@
 {
-  "compilerOptions": {
-    "lib": ["esnext", "dom", "DOM.Iterable"],
-    "types": ["vitest/globals"],
-    "target": "es2022",
-    "emitDecoratorMetadata": false,
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "isolatedModules": true
-  },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "typeCheckHostBindings": true,
-    "strictTemplates": true
-  },
-  "include": ["src", "test"]
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.test.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

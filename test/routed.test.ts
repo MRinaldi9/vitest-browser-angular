@@ -32,15 +32,12 @@ test('should render routed component with full routing configuration and navigat
     },
   ];
 
-  const { locator, router, componentClassInstance } = await render(
-    RoutedComponent,
-    {
-      withRouting: {
-        routes,
-        initialRoute: '/home',
-      },
+  const { locator, router, componentClassInstance } = await render(RoutedComponent, {
+    withRouting: {
+      routes,
+      initialRoute: '/home',
     },
-  );
+  });
 
   // Check that the component loads
   await expect.element(locator).toHaveTextContent('Routed Component');
@@ -66,9 +63,7 @@ test('should render routed component with full routing configuration and navigat
 });
 
 test('should have access to route params when rendered as routed component', async () => {
-  const routes: Routes = [
-    { path: 'user/:id', component: UserWithRouteParamComponent },
-  ];
+  const routes: Routes = [{ path: 'user/:id', component: UserWithRouteParamComponent }];
 
   const { componentClassInstance } = await render(UserWithRouteParamComponent, {
     withRouting: {
@@ -94,15 +89,12 @@ test('should pass inputs via route data using withComponentInputBinding', async 
     },
   ];
 
-  const { locator, componentClassInstance } = await render(
-    UserProfileComponent,
-    {
-      withRouting: {
-        routes,
-        initialRoute: '/profile',
-      },
+  const { locator, componentClassInstance } = await render(UserProfileComponent, {
+    withRouting: {
+      routes,
+      initialRoute: '/profile',
     },
-  );
+  });
 
   // Verify inputs were bound from route data
   expect(componentClassInstance.name()).toBe('Jane Doe');
@@ -111,13 +103,9 @@ test('should pass inputs via route data using withComponentInputBinding', async 
   expect(componentClassInstance.isActive()).toBe(true);
 
   // Verify the component renders correctly with the data
-  await expect
-    .element(locator.getByRole('heading', { name: 'Jane Doe' }))
-    .toBeVisible();
+  await expect.element(locator.getByRole('heading', { name: 'Jane Doe' })).toBeVisible();
   await expect.element(locator.getByText('Age: 30')).toBeVisible();
-  await expect
-    .element(locator.getByText('Email: jane@example.com'))
-    .toBeVisible();
+  await expect.element(locator.getByText('Email: jane@example.com')).toBeVisible();
   await expect.element(locator.getByText('Status: Active')).toBeVisible();
 });
 
@@ -135,16 +123,13 @@ test('should NOT bind route data to inputs when disableInputBinding is true', as
     },
   ];
 
-  const { locator, componentClassInstance } = await render(
-    UserProfileComponent,
-    {
-      withRouting: {
-        routes,
-        initialRoute: '/profile',
-        disableInputBinding: true,
-      },
+  const { locator, componentClassInstance } = await render(UserProfileComponent, {
+    withRouting: {
+      routes,
+      initialRoute: '/profile',
+      disableInputBinding: true,
     },
-  );
+  });
 
   // Verify inputs were NOT bound - they should have default values
   expect(componentClassInstance.name()).toBe('Guest');
@@ -153,9 +138,7 @@ test('should NOT bind route data to inputs when disableInputBinding is true', as
   expect(componentClassInstance.isActive()).toBe(false);
 
   // Verify the component renders with default values
-  await expect
-    .element(locator.getByRole('heading', { name: 'Guest' }))
-    .toBeVisible();
+  await expect.element(locator.getByRole('heading', { name: 'Guest' })).toBeVisible();
   await expect.element(locator.getByText('Age: 0')).toBeVisible();
   await expect.element(locator.getByText('Status: Inactive')).toBeVisible();
 });
