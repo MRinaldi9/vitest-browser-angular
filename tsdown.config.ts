@@ -4,7 +4,9 @@ export default defineConfig({
   entry: ['./src/*.ts'],
   format: 'esm',
   outDir: './dist',
-  minify: true,
   exports: true,
   dts: { build: true },
+  publint: true,
+  tsconfig: './tsconfig.app.json',
+  sourcemap: true,
 });
