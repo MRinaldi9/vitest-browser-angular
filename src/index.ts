@@ -1,8 +1,6 @@
 import { beforeEach } from 'vitest';
 import { page } from 'vitest/browser';
 import { cleanup, render } from './pure';
-export type { Inputs, ComponentRenderOptions, RenderFn, RenderResult } from './pure';
-export { cleanup, render };
 
 page.extend({
   render,
@@ -18,3 +16,6 @@ declare module 'vitest/browser' {
     render: typeof render;
   }
 }
+
+export type { Inputs, ComponentRenderOptions, RenderFn, RenderResult } from './types/render';
+export { cleanup, render };
