@@ -1,5 +1,5 @@
 {
-  "name": "@mrinaldi/vitest-browser-angular",
+  "name": "@wismaz/vitest-browser-angular",
   "version": "0.6.2",
   "description": "Render Angular components in Vitest Browser Mode",
   "keywords": [
