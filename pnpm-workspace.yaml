@@ -5,6 +5,7 @@ allowBuilds:
   lmdb: true
   msgpackr-extract: true
 minimumReleaseAge: 2880
+publishBranch: develop
 versioning:
   changelog:
     storage: repository
