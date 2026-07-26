@@ -19,5 +19,13 @@ declare module 'vitest/browser' {
   }
 }
 
-export type { Inputs, ComponentRenderOptions, RenderFn, RenderResult } from './types/render';
-export { cleanup, render };
+export type {
+  Inputs,
+  ComponentRenderOptions,
+  RenderFn,
+  RenderResult,
+  RoutedRenderResult,
+  DirectiveRenderOptions,
+  DirectiveRenderResult,
+} from './types/render';
+export { cleanup, render, renderDirective };

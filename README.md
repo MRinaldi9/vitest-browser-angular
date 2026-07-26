@@ -501,6 +501,86 @@ test('renders component with service provider', async () => {
 });
 ```
 
+## Directives
+
+Use `renderDirective` to test attribute directives. It wraps the directive in a generated host component and renders the provided `template`, so you can drive the directive with real DOM events and assert against the host element.
+
+```ts
+import { Directive, input, output } from '@angular/core';
+import { test, expect } from 'vitest';
+import { renderDirective } from 'vitest-browser-angular';
+
+@Directive({
+  selector: '[appHighlight]',
+  host: { '[style.color]': 'color()' },
+})
+export class HighlightDirective {
+  color = input('black');
+  blurred = output<FocusEvent>();
+}
+
+test('renders directive', async () => {
+  const { directiveInstance, locator } = await renderDirective(HighlightDirective, {
+    template: `<button appHighlight>Test</button>`,
+  });
+
+  expect(directiveInstance.color()).toBe('black');
+  await expect.element(locator.getByText('Test')).toBeVisible();
+});
+```
+
+The `template` **must** include the directive selector otherwise an error will be thrown.
+
+### Host Props
+
+Pass reactive values and handlers to the template through `hostProps`. Each property is assigned onto the host component instance, so you can reference it directly in the template binding:
+
+```ts
+import { signal } from '@angular/core';
+
+test('binds host inputs and outputs', async () => {
+  const color = signal('red');
+  const onBlur = vi.fn();
+
+  const { getByText } = await renderDirective(HighlightDirective, {
+    template: `<button appHighlight [color]="color()" (blurred)="onBlur($event)">Test</button>`,
+    hostProps: { color, onBlur },
+  });
+
+  expect(getByText('Test')).toHaveStyle({ color: 'rgb(255, 0, 0)' });
+
+  color.set('blue');
+  await expect.element(getByText('Test')).toHaveStyle({ color: 'rgb(0, 0, 255)' });
+});
+```
+
+Signals passed via `hostProps` keep the binding reactive — updating them propagates to the directive once change detection runs.
+
+### Imports and Providers
+
+Pass additional modules (pipes, directives, components used in the template) via `imports`, and register DI providers via `providers`:
+
+```ts
+import { JsonPipe } from '@angular/common';
+
+const { getByText } = await renderDirective(HighlightDirective, {
+  template: `<button appHighlight>{{ color() | json }}</button>`,
+  imports: [JsonPipe],
+  providers: [{ provide: SomeService, useValue: fakeService }],
+});
+```
+
+### Result
+
+The render result mirrors `render` and adds directive-specific helpers:
+
+- `directiveInstance` — the instance of the tested directive, resolved from the host element's injector.
+- `locator` — Vitest browser locator scoped to the host component's container.
+- `fixture` — the host component's `ComponentFixture`.
+- `container` / `baseElement` — the rendered elements.
+- `debug` — pretty-print the DOM for debugging.
+- `getByRole`, `getByText`, … — the standard `LocatorSelectors` scoped to `baseElement`.
+
 ## Contributing
 
 Want to contribute? Yayy! 🎉

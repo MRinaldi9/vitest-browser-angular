@@ -2,4 +2,6 @@
 'vitest-browser-angular': minor
 ---
 
-feat: implement render directive function
+Implement render directive attribute function
+
+ - refactor render function for better type inference

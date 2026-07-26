@@ -10,9 +10,17 @@ import { ɵgetCleanupHook as getCleanupHook, TestBed } from '@angular/core/testi
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { page, utils } from 'vitest/browser';
-import { ComponentRenderOptions, RenderResult, Inputs } from './types/render';
-import { RoutingConfig, Outputs } from './types/render';
+import { page, PrettyDOMOptions, utils } from 'vitest/browser';
+import {
+  ComponentRenderOptions,
+  DirectiveRenderOptions,
+  DirectiveRenderResult,
+  Inputs,
+  Outputs,
+  RenderResult,
+  RoutedRenderResult,
+  RoutingConfig,
+} from './types/render';
 
 const { debug, getElementLocatorSelectors } = utils;
 
@@ -44,8 +52,22 @@ const { debug, getElementLocatorSelectors } = utils;
  */
 export async function render<T>(
   componentClass: Type<T>,
+  options?: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & { withRouting?: false },
+): Promise<RenderResult<T>>;
+export async function render<T>(
+  componentClass: Type<T>,
+  options: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & {
+    withRouting: true | RoutingConfig;
+  },
+): Promise<RoutedRenderResult<T>>;
+export async function render<T>(
+  componentClass: Type<T>,
   options?: ComponentRenderOptions<Type<T>>,
-): Promise<RenderResult<T>> {
+): Promise<RenderResult<T> | RoutedRenderResult<T>>;
+export async function render<T>(
+  componentClass: Type<T>,
+  options?: ComponentRenderOptions<Type<T>>,
+): Promise<RenderResult<T> | RoutedRenderResult<T>> {
   const imports = [componentClass, ...(options?.imports || [])];
   const providers = [...(options?.providers || [])];
   const baseElement = options?.baseElement || document.body;
@@ -88,26 +110,35 @@ export async function render<T>(
     });
   }
 
-  let fixture: RenderResult<T>['fixture'];
-  let container: HTMLElement;
-  let componentClassInstance: T;
-  let routerHarness: RouterTestingHarness | undefined;
-  let router: Router | undefined;
-
   if (routingConfig) {
-    routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
-    router = TestBed.inject(Router);
+    const routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
+    const router = TestBed.inject(Router);
+    const fixture = routerHarness.fixture;
+    const container = routerHarness.routeNativeElement!;
+    const componentClassInstance = routerHarness.routeDebugElement?.componentInstance as T;
 
-    fixture = routerHarness.fixture;
-    container = routerHarness.routeNativeElement!;
-    componentClassInstance = routerHarness.routeDebugElement?.componentInstance as T;
-  } else {
-    const bindings = createBindingsComponent(options?.inputs, options?.outputs);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
 
-    fixture = TestBed.createComponent(componentClass, { bindings });
-    container = fixture.nativeElement;
-    componentClassInstance = fixture.componentInstance;
+    const locator = page.elementLocator(container);
+
+    return {
+      baseElement,
+      container,
+      fixture,
+      debug: (el = baseElement, maxLength, opts) => debug(el, maxLength, opts),
+      componentClassInstance,
+      locator,
+      routerHarness,
+      router,
+      ...getElementLocatorSelectors(baseElement),
+    };
   }
+
+  const bindings = createBindingsComponent(options?.inputs, options?.outputs);
+  const fixture = TestBed.createComponent(componentClass, { bindings });
+  const container = fixture.nativeElement;
+  const componentClassInstance = fixture.componentInstance;
 
   fixture.autoDetectChanges();
   await fixture.whenStable();
@@ -119,55 +150,10 @@ export async function render<T>(
     container,
     fixture,
     debug: (el = baseElement, maxLength, opts) => debug(el, maxLength, opts),
-    componentClassInstance,
-    component: locator, // deprecated, this will be removed in a future version
+    componentClassInstance, // deprecated, this will be removed in a future version
     locator,
-    routerHarness,
-    router,
     ...getElementLocatorSelectors(baseElement),
   };
-}
-
-export interface DirectiveRenderOptions {
-  /** Template to render the directive in. Must include the directive selector. */
-  template: string;
-
-  /** Host component input values to pass and make reactive. */
-  hostProps?: Record<string, unknown>;
-
-  /** Additional imports for the test module. */
-  imports?: Type<unknown>[];
-
-  /** Additional providers for the test module. */
-  providers?: Provider[];
-
-  /** The base element for screen queries. Defaults to document.body. */
-  baseElement?: HTMLElement;
-}
-
-export interface DirectiveRenderResult<T> extends LocatorSelectors {
-  container: HTMLElement;
-  baseElement: HTMLElement;
-  /**
-   * The host component's fixture.
-   */
-  fixture: ComponentFixture<unknown>;
-  /**
-   * Instance of the tested directive.
-   */
-  directiveInstance: T;
-  /**
-   * Locator scoped to the host element where the directive is applied.
-   */
-  locator: Locator;
-  /**
-   * Debug function for the directive's element.
-   */
-  debug(
-    el?: HTMLElement | HTMLElement[] | Locator | Locator[],
-    maxLength?: number,
-    options?: PrettyDOMOptions,
-  ): void;
 }
 
 /**
@@ -197,14 +183,22 @@ export async function renderDirective<T>(
   options: DirectiveRenderOptions,
 ): Promise<DirectiveRenderResult<T>> {
   const baseElement = options.baseElement || document.body;
-  const imports = [directiveClass, ...(options.imports || [])];
+  const extraImports = options.imports || [];
+  if (extraImports.includes(directiveClass)) {
+    throw new Error(
+      `[renderDirective] The directive ${directiveClass.name} is already passed as the first argument and is added ` +
+        `to the test module's \`imports\` automatically. Remove it from \`options.imports\` to avoid a duplicate import.`,
+    );
+  }
+  const imports = [directiveClass, ...extraImports];
   const providers = [...(options.providers || [])];
   const hostProps = options.hostProps || {};
+  const changeDetection = options.changeDetection || 'onPush';
   @Component({
     selector: 'test-host',
     imports,
     template: options.template,
-    changeDetection: ChangeDetectionStrategy.OnPush,
+    ...(changeDetection === 'eager' ? { changeDetection: ChangeDetectionStrategy.Eager } : {}),
   })
   class TestHostComponent {
     constructor() {
@@ -214,21 +208,27 @@ export async function renderDirective<T>(
     }
   }
 
-  const { fixture, container, locator, debug } = await render(TestHostComponent, {
+  const {
+    fixture: hostFixture,
+    container,
+    locator,
+    debug,
+  } = await render(TestHostComponent, {
     providers,
     baseElement,
   });
-  const directiveDE = fixture.debugElement.query(By.directive(directiveClass));
+  const directiveDE = hostFixture.debugElement.query(By.directive(directiveClass));
   if (!directiveDE) {
     throw new Error(
       `[renderDirective] Could not find directive ${directiveClass.name} in template. ` +
-        `Make sure the template includes the directive selector and it is imported.`,
+        `Make sure the template includes the directive selector`,
     );
   }
+
   return {
     container,
     baseElement,
-    fixture,
+    hostFixture,
     locator,
     directiveInstance: directiveDE.injector.get(directiveClass) as T,
     debug: (el = container, maxLength?: number, opts?: PrettyDOMOptions) =>

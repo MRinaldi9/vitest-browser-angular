@@ -7,18 +7,18 @@ import {
 
 describe('componentProviders', () => {
   test('renders component with default service provider', async () => {
-    const { component } = await render(ServiceConsumerComponent, {
+    const { locator } = await render(ServiceConsumerComponent, {
       componentProviders: [GreetingService],
     });
 
-    await expect.element(component.getByTestId('greeting')).toHaveTextContent('Hello, World!');
+    await expect.element(locator.getByTestId('greeting')).toHaveTextContent('Hello, World!');
     await expect
-      .element(component.getByTestId('message'))
+      .element(locator.getByTestId('message'))
       .toHaveTextContent('This component uses injected services');
   });
 
   test('renders component with custom service provider', async () => {
-    const { component } = await render(ServiceConsumerComponent, {
+    const { locator } = await render(ServiceConsumerComponent, {
       componentProviders: [
         {
           provide: GreetingService,
@@ -28,15 +28,15 @@ describe('componentProviders', () => {
     });
 
     await expect
-      .element(component.getByTestId('greeting'))
+      .element(locator.getByTestId('greeting'))
       .toHaveTextContent('Welcome, World! Nice to see you.');
     await expect
-      .element(component.getByTestId('message'))
+      .element(locator.getByTestId('message'))
       .toHaveTextContent('This component uses injected services');
   });
 
   test('renders component with factory provider', async () => {
-    const { component } = await render(ServiceConsumerComponent, {
+    const { locator } = await render(ServiceConsumerComponent, {
       componentProviders: [
         {
           provide: GreetingService,
@@ -48,7 +48,7 @@ describe('componentProviders', () => {
     });
 
     await expect
-      .element(component.getByTestId('greeting'))
+      .element(locator.getByTestId('greeting'))
       .toHaveTextContent("Hey World, what's up?");
   });
 
@@ -57,7 +57,7 @@ describe('componentProviders', () => {
       getGreeting: (name: string) => `Greetings, ${name}!`,
     };
 
-    const { component } = await render(ServiceConsumerComponent, {
+    const { locator } = await render(ServiceConsumerComponent, {
       componentProviders: [
         {
           provide: GreetingService,
@@ -66,6 +66,6 @@ describe('componentProviders', () => {
       ],
     });
 
-    await expect.element(component.getByTestId('greeting')).toHaveTextContent('Greetings, World!');
+    await expect.element(locator.getByTestId('greeting')).toHaveTextContent('Greetings, World!');
   });
 });

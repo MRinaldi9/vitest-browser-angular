@@ -136,31 +136,51 @@ export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<un
   imports?: unknown[];
 }
 
-export interface RenderResult<T> extends LocatorSelectors {
+/**
+ * Base fields shared by every `render()` result, independent of whether routing is enabled.
+ */
+interface BaseRenderResult<T> extends LocatorSelectors {
   baseElement: HTMLElement;
   container: HTMLElement;
-  /**
-   * The ComponentFixture for the rendered component. When using `withRouting`, this is the
-   * RouterTestingHarness's internal fixture not a fixture of `T` directly.
-   */
-  fixture: ComponentFixture<T> | InstanceType<typeof RouterTestingHarness>['fixture'];
   debug(
     el?: HTMLElement | HTMLElement[] | Locator | Locator[],
     maxLength?: number,
     options?: PrettyDOMOptions,
   ): void;
 
-  /** @deprecated Use locator instead */
-  component: Locator;
-
   /** Vitest browser locator scoped to the rendered component's container. */
   locator: Locator;
 
   /** The instance of the rendered component's class. */
   componentClassInstance: T;
+}
+
+/**
+ * Result of `render()` when routing is **not** enabled.
+ *
+ * The `fixture` is the `ComponentFixture<T>` of the rendered component.
+ */
+export interface RenderResult<T> extends BaseRenderResult<T> {
+  /**
+   * The ComponentFixture for the rendered component.
+   */
+  fixture: ComponentFixture<T>;
+}
+
+/**
+ * Result of `render()` when `withRouting` is enabled.
+ *
+ * The `fixture` is the `RouterTestingHarness`'s internal fixture (typed as
+ * `ComponentFixture<unknown>`), and `router` / `routerHarness` are always defined.
+ */
+export interface RoutedRenderResult<T> extends BaseRenderResult<T> {
+  /**
+   * The RouterTestingHarness's internal fixture. Not a fixture of `T` directly.
+   */
+  fixture: ComponentFixture<unknown>;
 
   /**
-   * The RouterTestingHarness instance. Only available when `withRouting` is used.
+   * The RouterTestingHarness instance.
    *
    * **Preferred for navigation in tests.** Use `navigateByUrl()` which:
    *
@@ -177,20 +197,79 @@ export interface RenderResult<T> extends LocatorSelectors {
    *   // Simple navigation
    *   await routerHarness.navigateByUrl('/about');
    */
-  routerHarness?: RouterTestingHarness;
+  routerHarness: RouterTestingHarness;
 
   /**
-   * The Angular Router instance. Only available when `withRouting` is used.
+   * The Angular Router instance.
    *
    * Useful for inspecting router state. For navigation, prefer `routerHarness.navigateByUrl()`.
    *
    * @example
    *   expect(router.url).toBe('/user/42');
    */
-  router?: Router;
+  router: Router;
 }
 
-export type RenderFn = <T>(
-  component: Type<T>,
-  options?: ComponentRenderOptions<Type<T>>,
-) => Promise<RenderResult<T>>;
+export interface RenderFn {
+  <T>(
+    component: Type<T>,
+    options?: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & {
+      withRouting?: false;
+    },
+  ): Promise<RenderResult<T>>;
+  <T>(
+    component: Type<T>,
+    options: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & {
+      withRouting: true | RoutingConfig;
+    },
+  ): Promise<RoutedRenderResult<T>>;
+  <T>(
+    component: Type<T>,
+    options?: ComponentRenderOptions<Type<T>>,
+  ): Promise<RenderResult<T> | RoutedRenderResult<T>>;
+}
+
+export interface DirectiveRenderOptions {
+  /** Template to render the directive in. Must include the directive selector. */
+  template: string;
+
+  /** Host component input values to pass and make reactive. */
+  hostProps?: Record<string, unknown>;
+
+  /** Additional imports for the wrapper component. */
+  imports?: Type<unknown>[];
+
+  /** Additional providers for the test module. */
+  providers?: Array<Provider | EnvironmentProviders>;
+
+  /** The base element for screen queries. Defaults to document.body. */
+  baseElement?: HTMLElement;
+
+  /** Change detection strategy for the host component. Defaults to 'onPush'. */
+  changeDetection?: 'eager' | 'onPush';
+}
+
+export interface DirectiveRenderResult<T> extends LocatorSelectors {
+  container: HTMLElement;
+  baseElement: HTMLElement;
+  /**
+   * The host component's fixture.
+   */
+  hostFixture: ComponentFixture<unknown>;
+  /**
+   * Instance of the tested directive.
+   */
+  directiveInstance: T;
+  /**
+   * Locator scoped to the host element where the directive is applied.
+   */
+  locator: Locator;
+  /**
+   * Debug function for the directive's element.
+   */
+  debug(
+    el?: HTMLElement | HTMLElement[] | Locator | Locator[],
+    maxLength?: number,
+    options?: PrettyDOMOptions,
+  ): void;
+}
