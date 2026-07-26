@@ -1,5 +1,13 @@
 # vitest-browser-angular
 
+## 0.7.0
+
+### Minor Changes
+
+- Implement render directive attribute function
+
+   - refactor render function for better type inference
+
 ## 0.6.2
 
 ### Minor Changes

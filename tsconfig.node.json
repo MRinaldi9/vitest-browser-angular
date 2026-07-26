@@ -8,5 +8,5 @@
     "types": ["node"],
     "erasableSyntaxOnly": true
   },
-  "include": ["scripts", "*.config.ts"]
+  "include": ["*.config.ts"]
 }
