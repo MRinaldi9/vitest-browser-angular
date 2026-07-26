@@ -2,19 +2,9 @@ allowBuilds:
   '@parcel/watcher': false
   esbuild: true
   lefthook: true
-  lmdb: false
-  msgpackr-extract: false
+  lmdb: true
+  msgpackr-extract: true
 minimumReleaseAge: 2880
-minimumReleaseAgeExclude:
-  - '@analogjs/vite-plugin-angular@2.6.4'
-  - '@analogjs/vitest-angular@2.6.4'
-  - '@angular-devkit/architect@0.2200.8'
-  - '@angular-devkit/core@22.0.8'
-  - '@angular-devkit/schematics@22.0.8'
-  - '@angular/build@22.0.8'
-  - electron-to-chromium@1.5.396
-  - tsdown@0.22.14
-  - verkit@0.3.0
 versioning:
   changelog:
     storage: repository
