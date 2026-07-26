@@ -5,7 +5,8 @@
     "lib": ["esnext"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "types": ["node"]
+    "types": ["node"],
+    "erasableSyntaxOnly": true
   },
   "include": ["scripts", "*.config.ts"]
 }

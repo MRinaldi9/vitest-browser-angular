@@ -6,7 +6,8 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "types": ["vitest/globals"],
-    "emitDecoratorMetadata": false
+    "emitDecoratorMetadata": false,
+    "experimentalDecorators": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
