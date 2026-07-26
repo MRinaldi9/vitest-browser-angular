@@ -1,5 +1,5 @@
 ---
-'vitest-browser-angular': minor
+'@wismaz/vitest-browser-angular': minor
 ---
 
 Implement render directive attribute function
