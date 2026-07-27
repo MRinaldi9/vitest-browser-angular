@@ -1,6 +1,6 @@
 # vitest-browser-angular
 
-> **Note:** This repository is a **fork** of the official [`vitest-browser-angular`](https://github.com/analogjs/vitest-browser-angular) library. The implementations contained here are developed independently and are **not** shared with the official project.
+> **Note:** This repository is a **fork** of the official [`vitest-browser-angular`](https://github.com/vitest-community/vitest-browser-angular) library. The implementations contained here are developed independently and are **not** shared with the official project.
 
 This community package renders Angular components in [Vitest Browser Mode](https://vitest.dev/guide/browser).
 

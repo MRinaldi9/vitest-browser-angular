@@ -1,4 +1,4 @@
-# vitest-browser-angular
+# @wismaz/vitest-browser-angular
 
 ## 0.7.0
 
@@ -6,13 +6,13 @@
 
 - Implement render directive attribute function
 
-   - refactor render function for better type inference
+  - refactor render function for better type inference
 
 ## 0.6.2
 
 ### Minor Changes
 
-- chore: Update to PNPM 11
+- Update to PNPM 11
 
   - Removed from package.json the "pnpm" field, which is no longer readed in PNPM 11.
   - Added pnpm-workspace.yaml file with the "allowBuilds" field, which is required in PNPM 11 to allow building some dependencies.
