@@ -16,3 +16,7 @@
   dir: ""
   intents:
     - polite-schools-pay
+"@wismaz/vitest-browser-angular@0.8.2":
+  dir: ""
+  intents:
+    - bold-loops-fail

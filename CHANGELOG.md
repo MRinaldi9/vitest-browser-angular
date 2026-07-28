@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 0.8.2
+
+### Patch Changes
+
+- Fix correct compilation decorators
+
 ## 0.8.1
 
 ### Patch Changes
