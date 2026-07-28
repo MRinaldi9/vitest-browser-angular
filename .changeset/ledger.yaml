@@ -12,3 +12,7 @@
   dir: ""
   intents:
     - red-peaches-repair
+"@wismaz/vitest-browser-angular@0.8.1":
+  dir: ""
+  intents:
+    - polite-schools-pay

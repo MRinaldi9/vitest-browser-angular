@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 0.8.1
+
+### Patch Changes
+
+- Fix package artifact
+
 ## 0.8.0
 
 ### Minor Changes
