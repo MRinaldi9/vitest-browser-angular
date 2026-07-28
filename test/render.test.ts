@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { render } from '../src';
+import { render } from '@wismaz/vitest-browser-angular';
 import { HelloWorldComponent } from './components/hello-world.component';
 import { ProductComponent } from './components/product.component';
 import { UserProfileComponent } from './components/user-profile.component';

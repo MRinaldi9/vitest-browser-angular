@@ -1,5 +1,5 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { render } from '../src';
+import { render } from '@wismaz/vitest-browser-angular';
 import { HttpDemoComponent } from './components/http-demo.component';
 
 describe('withHttp', () => {

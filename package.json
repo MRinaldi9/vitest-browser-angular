@@ -41,6 +41,7 @@
     "lint:fix": "pnpm lint --fix",
     "release": "pnpm publish -r",
     "release.pkg-pr-new": "pnpm dlx pkg-pr-new publish",
+    "pretest": "pnpm build",
     "test": "vitest"
   },
   "devDependencies": {

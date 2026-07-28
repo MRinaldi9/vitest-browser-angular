@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { userEvent } from 'vitest/browser';
-import { renderDirective } from '../src';
+import { renderDirective } from '@wismaz/vitest-browser-angular';
 import { ChangeClass } from './directives/change-class';
 
 test('renders directive', async () => {

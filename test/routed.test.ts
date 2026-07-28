@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { render } from '../src';
+import { render } from '@wismaz/vitest-browser-angular';
 import { AboutComponent } from './components/about.component';
 import { ContactComponent } from './components/contact.component';
 import { HomeComponent } from './components/home.component';

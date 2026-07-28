@@ -7,6 +7,10 @@
     "noPropertyAccessFromIndexSignature": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@wismaz/vitest-browser-angular": ["./dist/index.d.mts"],
+      "@wismaz/vitest-browser-angular/pure": ["./dist/pure.d.mts"]
+    }
   }
 }

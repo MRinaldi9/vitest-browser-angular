@@ -6,7 +6,8 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "emitDecoratorMetadata": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "experimentalDecorators": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

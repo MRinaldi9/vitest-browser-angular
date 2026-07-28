@@ -1,4 +1,4 @@
-import { render } from '../src';
+import { render } from '@wismaz/vitest-browser-angular';
 import { ZonelessComponent } from './components/zoneless.component';
 
 describe('Zoneless Tests', () => {
