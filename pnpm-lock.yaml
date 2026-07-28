@@ -216,6 +216,9 @@ importers:
       '@angular/build':
         specifier: ^22.0.8
         version: 22.0.8(@angular/compiler-cli@22.0.8(@angular/compiler@22.0.8)(typescript@6.0.3))(@angular/compiler@22.0.8)(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)(zone.js@0.16.2))(@angular/platform-browser@22.0.8(@angular/common@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)(zone.js@0.16.2)))(@types/node@26.1.1)(chokidar@5.0.0)(jiti@2.7.0)(postcss@8.5.22)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10)(yaml@2.9.0)
+      '@angular/common':
+        specifier: ^22.0.8
+        version: 22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2)
       '@angular/compiler':
         specifier: ^22.0.8
         version: 22.0.8

@@ -15,12 +15,20 @@ import {
   ComponentRenderOptions,
   DirectiveRenderOptions,
   DirectiveRenderResult,
+  HttpConfig,
   Inputs,
   Outputs,
   RenderResult,
   RoutedRenderResult,
   RoutingConfig,
 } from './types/render';
+import {
+  HttpFeature,
+  HttpFeatureKind,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 const { debug, getElementLocatorSelectors } = utils;
 
@@ -97,6 +105,12 @@ export async function render<T>(
     }
   }
 
+  if (options?.withHttp || (typeof options?.withHttp === 'boolean' && options.withHttp)) {
+    const httpFeatures = _createFeaturesHttp(options.withHttp);
+
+    providers.push(provideHttpClient(...httpFeatures), provideHttpClientTesting());
+  }
+
   TestBed.configureTestingModule({
     imports,
     providers,
@@ -109,6 +123,9 @@ export async function render<T>(
       },
     });
   }
+
+  const httpTesting =
+    TestBed.inject(HttpTestingController, undefined, { optional: true }) ?? undefined;
 
   if (routingConfig) {
     const routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
@@ -131,11 +148,12 @@ export async function render<T>(
       locator,
       routerHarness,
       router,
+      httpTesting,
       ...getElementLocatorSelectors(baseElement),
     };
   }
 
-  const bindings = createBindingsComponent(options?.inputs, options?.outputs);
+  const bindings = _createBindingsComponent(options?.inputs, options?.outputs);
   const fixture = TestBed.createComponent(componentClass, { bindings });
   const container = fixture.nativeElement;
   const componentClassInstance = fixture.componentInstance;
@@ -150,8 +168,9 @@ export async function render<T>(
     container,
     fixture,
     debug: (el = baseElement, maxLength, opts) => debug(el, maxLength, opts),
-    componentClassInstance, // deprecated, this will be removed in a future version
+    componentClassInstance,
     locator,
+    httpTesting,
     ...getElementLocatorSelectors(baseElement),
   };
 }
@@ -252,7 +271,7 @@ export function cleanup(shouldTeardown = false) {
  * @param outputsBinding Output handler functions keyed by component property
  * @returns Flat binding array for `TestBed.createComponent({ bindings })`
  */
-function createBindingsComponent<C extends Type<unknown>>(
+function _createBindingsComponent<C extends Type<unknown>>(
   inputsBinding: Inputs<C> = {},
   outputsBinding: Outputs<C> = {},
 ) {
@@ -263,4 +282,15 @@ function createBindingsComponent<C extends Type<unknown>>(
     outputBinding(key, value as (v: unknown) => unknown),
   );
   return [...inputBindings, ...outputBindings];
+}
+
+function _createFeaturesHttp(httpConfig: HttpConfig | true): HttpFeature<HttpFeatureKind>[] {
+  const features: HttpFeature<HttpFeatureKind>[] = [];
+  if (typeof httpConfig === 'boolean') return features;
+
+  const { interceptors } = httpConfig;
+  if (interceptors && interceptors.length > 0) {
+    features.unshift(withInterceptors(interceptors));
+  }
+  return features;
 }

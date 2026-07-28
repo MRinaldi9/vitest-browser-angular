@@ -1,14 +1,16 @@
+import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpTestingController } from '@angular/common/http/testing';
 import type {
-  Type,
+  EnvironmentProviders,
   InputSignal,
   OutputEmitterRef,
   Provider,
-  EnvironmentProviders,
+  Type,
 } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
-import type { Routes, Router } from '@angular/router';
+import type { Router, Routes } from '@angular/router';
 import type { RouterTestingHarness } from '@angular/router/testing';
-import type { LocatorSelectors, Locator, PrettyDOMOptions } from 'vitest/browser';
+import type { Locator, LocatorSelectors, PrettyDOMOptions } from 'vitest/browser';
 
 /**
  * Configuration options for rendering components with Angular Router support.
@@ -62,6 +64,10 @@ export interface RoutingConfig {
    * @default false
    */
   disableInputBinding?: boolean;
+}
+
+export interface HttpConfig {
+  interceptors?: HttpInterceptorFn[];
 }
 
 export type Inputs<CMP_TYPE extends Type<unknown>> = Partial<{
@@ -126,6 +132,25 @@ export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<un
    */
   withRouting?: RoutingConfig | boolean;
 
+  /** Enable Angular HttpClient testing support for the component. When enabled, `httpTesting` is
+   * available in the render result.
+   *
+   * - When `true`: Enables HttpClient testing with default configuration.
+   * - When `HttpConfig`: Enables HttpClient testing with the provided configuration.
+   *
+   * @example
+   *   ```typescript
+   *   // Basic HttpClient testing
+   *   const { httpTesting } = await render(MyComponent, { withHttp: true });
+   *
+   *   // With custom interceptors
+   *   const { httpTesting } = await render(MyComponent, {
+   *     withHttp: { interceptors: [myInterceptor] },
+   *   });
+   *   ```;
+   */
+  withHttp?: HttpConfig | boolean;
+
   /** Additional providers to configure in the testing module. */
   providers?: Array<Provider | EnvironmentProviders>;
 
@@ -153,6 +178,11 @@ interface BaseRenderResult<T> extends LocatorSelectors {
 
   /** The instance of the rendered component's class. */
   componentClassInstance: T;
+
+  /**
+   * The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled.
+   */
+  httpTesting?: HttpTestingController;
 }
 
 /**

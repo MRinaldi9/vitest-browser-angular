@@ -477,6 +477,77 @@ test('disable automatic input binding', async () => {
 });
 ```
 
+## HTTP Testing
+
+Enable Angular's `HttpClient` testing support with the `withHttp` option. When enabled, the render result exposes an `httpTesting` instance (`HttpTestingController`) you can use to assert on outgoing requests and flush mocked responses — there's no need to manually wire up `provideHttpClient`/`provideHttpClientTesting`.
+
+### Basic HTTP Testing
+
+Enable HTTP testing with `withHttp: true`:
+
+```ts
+import { Component, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Component({
+  template: `
+    <h1 data-testid="title">{{ data()?.title ?? '' }}</h1>
+    <button data-testid="fetch" (click)="load()">Fetch</button>
+  `,
+})
+export class HttpDemoComponent {
+  private http = inject(HttpClient);
+  data = signal<{ title: string } | null>(null);
+
+  load() {
+    this.http.get<{ title: string }>('/api/data').subscribe(res => this.data.set(res));
+  }
+}
+
+test('mocks an HTTP response', async () => {
+  const { locator, httpTesting } = await render(HttpDemoComponent, {
+    withHttp: true,
+  });
+
+  await locator.getByTestId('fetch').click();
+
+  const req = httpTesting.expectOne('/api/data');
+  expect(req.request.method).toBe('GET');
+  req.flush({ title: 'Hello HTTP' });
+
+  await expect.element(locator.getByTestId('title')).toHaveTextContent('Hello HTTP');
+});
+```
+
+### HTTP with Interceptors
+
+Pass an `HttpConfig` with custom interceptors to register them via Angular's `withInterceptors`:
+
+```ts
+import { HttpInterceptorFn } from '@angular/common/http';
+
+const authInterceptor: HttpInterceptorFn = (req, next) =>
+  next(req.clone({ setHeaders: { 'X-Custom': 'test-value' } }));
+
+test('applies custom interceptors', async () => {
+  const { locator, httpTesting } = await render(HttpDemoComponent, {
+    withHttp: { interceptors: [authInterceptor] },
+  });
+
+  await locator.getByTestId('fetch').click();
+
+  const req = httpTesting.expectOne('/api/data');
+  expect(req.request.headers.get('X-Custom')).toBe('test-value');
+  req.flush({ title: 'Intercepted' });
+
+  await expect.element(locator.getByTestId('title')).toHaveTextContent('Intercepted');
+});
+```
+
+When `withHttp` is omitted, `httpTesting` is `undefined` and `HttpClient` is not configured.
+
 ## Component Providers
 
 If you need to add or override [component providers](https://angular.dev/guide/di/defining-dependency-providers#component-or-directive-providers), you can use the `componentProviders` option.
