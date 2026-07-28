@@ -8,3 +8,7 @@
   dir: ""
   intents:
     - fruity-camels-hug
+"@wismaz/vitest-browser-angular@0.8.0":
+  dir: ""
+  intents:
+    - red-peaches-repair

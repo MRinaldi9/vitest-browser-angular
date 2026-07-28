@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 0.8.0
+
+### Minor Changes
+
+- Implemented http feature testing
+
 ## 0.7.0
 
 ### Minor Changes
