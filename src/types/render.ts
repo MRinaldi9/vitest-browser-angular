@@ -90,8 +90,16 @@ export type Outputs<CMP extends Type<unknown>> = Partial<{
 
 /** Options for rendering a component with `render()`. */
 export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> {
-  /** The base element to render into. Defaults to `document.body`. */
+  /** The base element to render into.
+   *  @default document.body
+   * */
   baseElement?: HTMLElement;
+
+  /**
+   * When `true`, automatically infers the component's selector and adds it to the template.
+   * Only works when `withRouting` is not enabled.
+   */
+  inferTagName?: boolean;
 
   /**
    * Input values to pass to the component.

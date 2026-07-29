@@ -154,7 +154,10 @@ export async function render<T>(
   }
 
   const bindings = _createBindingsComponent(options?.inputs, options?.outputs);
-  const fixture = TestBed.createComponent(componentClass, { bindings });
+  const fixture = TestBed.createComponent(componentClass, {
+    bindings,
+    inferTagName: options?.inferTagName,
+  });
   const container = fixture.nativeElement;
   const componentClassInstance = fixture.componentInstance;
 
