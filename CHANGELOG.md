@@ -1,5 +1,12 @@
 # @wismaz/vitest-browser-angular
 
+## 0.9.0
+
+### Minor Changes
+
+- Added options for infering tag name of the component
+- Implemented rerender function to update component inputs
+
 ## 0.8.2
 
 ### Patch Changes
