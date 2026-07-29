@@ -218,6 +218,60 @@ test('render with inputs', async () => {
 
 Works with both signal-based inputs (`input()`) and `@Input()` decorators.
 
+### Rerender
+
+Update component inputs after rendering using `rerender`:
+
+```ts
+import { Component, input } from '@angular/core';
+import { signal } from '@angular/core';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Component({
+  template: '<h2>{{ name() }}</h2><p>Price: ${{ price() }}</p>',
+})
+export class ProductComponent {
+  name = input('Unknown Product');
+  price = input(0);
+}
+
+test('rerender with new inputs', async () => {
+  const { locator, rerender } = await render(ProductComponent, {
+    inputs: { name: 'Laptop', price: 1299.99 },
+  });
+
+  await expect.element(locator.getByText('Laptop')).toBeVisible();
+  await expect.element(locator.getByText(/Price: \$1299\.99/)).toBeVisible();
+
+  // Partial update — only the specified inputs change
+  await rerender({ price: 999.99 });
+  await expect.element(locator.getByText(/Price: \$999\.99/)).toBeVisible();
+  await expect.element(locator.getByText('Laptop')).toBeVisible();
+});
+```
+
+You can also pass `WritableSignal` values to keep the binding reactive:
+
+```ts
+test('rerender with signals', async () => {
+  const { locator, rerender } = await render(ProductComponent, {
+    inputs: { name: 'Laptop', price: 1299.99 },
+  });
+
+  const price$ = signal(799.99);
+  await rerender({ price: price$ });
+
+  await expect.element(locator.getByText(/Price: \$799\.99/)).toBeVisible();
+
+  // Update the signal — the component updates once change detection runs
+  price$.set(649.99);
+  await expect.element(locator.getByText(/Price: \$649\.99/)).toBeVisible();
+});
+```
+
+`rerender` is not available when using `withRouting`.
+
 ## Outputs
 
 Subscribe to component outputs using the `outputs` option:

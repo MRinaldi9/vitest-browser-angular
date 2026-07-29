@@ -1,10 +1,17 @@
-import type { Type } from '@angular/core';
+import {
+  HttpFeature,
+  HttpFeatureKind,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import type { Type, WritableSignal } from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
   inputBinding,
-  isSignal,
   outputBinding,
+  signal,
 } from '@angular/core';
 import { ɵgetCleanupHook as getCleanupHook, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -22,13 +29,7 @@ import {
   RoutedRenderResult,
   RoutingConfig,
 } from './types/render';
-import {
-  HttpFeature,
-  HttpFeatureKind,
-  provideHttpClient,
-  withInterceptors,
-} from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { isWSignal } from './utils/signals';
 
 const { debug, getElementLocatorSelectors } = utils;
 
@@ -153,13 +154,27 @@ export async function render<T>(
     };
   }
 
-  const bindings = _createBindingsComponent(options?.inputs, options?.outputs);
+  const { bindings, inputSignals } = _createBindingsComponent(options?.inputs, options?.outputs);
   const fixture = TestBed.createComponent(componentClass, {
     bindings,
     inferTagName: options?.inferTagName,
   });
   const container = fixture.nativeElement;
   const componentClassInstance = fixture.componentInstance;
+
+  const rerender = async (newInputs: Inputs<typeof componentClass>) => {
+    for (const [key, value] of Object.entries(newInputs)) {
+      if (key in inputSignals) {
+        inputSignals[key].set(value);
+      } else {
+        throw new Error(
+          `[render] Cannot rerender component with input "${key}" because it was not provided in the initial render options.`,
+        );
+      }
+    }
+    fixture.detectChanges();
+    await fixture.whenStable();
+  };
 
   fixture.autoDetectChanges();
   await fixture.whenStable();
@@ -174,6 +189,7 @@ export async function render<T>(
     componentClassInstance,
     locator,
     httpTesting,
+    rerender,
     ...getElementLocatorSelectors(baseElement),
   };
 }
@@ -278,13 +294,16 @@ function _createBindingsComponent<C extends Type<unknown>>(
   inputsBinding: Inputs<C> = {},
   outputsBinding: Outputs<C> = {},
 ) {
-  const inputBindings = Object.entries(inputsBinding).map(([key, value]) =>
-    inputBinding(key, isSignal(value) ? value : () => value),
-  );
+  const inputSignals: Record<string, WritableSignal<unknown>> = {};
+  const inputBindings = Object.entries(inputsBinding).map(([key, value]) => {
+    const tmpSignal = isWSignal(value) ? value : signal(value);
+    inputSignals[key] = tmpSignal;
+    return inputBinding(key, tmpSignal);
+  });
   const outputBindings = Object.entries(outputsBinding).map(([key, value]) =>
     outputBinding(key, value as (v: unknown) => unknown),
   );
-  return [...inputBindings, ...outputBindings];
+  return { inputSignals, bindings: [...inputBindings, ...outputBindings] };
 }
 
 function _createFeaturesHttp(httpConfig: HttpConfig | true): HttpFeature<HttpFeatureKind>[] {

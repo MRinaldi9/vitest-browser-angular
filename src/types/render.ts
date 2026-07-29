@@ -2,10 +2,11 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { HttpTestingController } from '@angular/common/http/testing';
 import type {
   EnvironmentProviders,
-  InputSignal,
+  InputSignalWithTransform,
   OutputEmitterRef,
   Provider,
   Type,
+  WritableSignal,
 } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import type { Router, Routes } from '@angular/router';
@@ -70,10 +71,18 @@ export interface HttpConfig {
   interceptors?: HttpInterceptorFn[];
 }
 
+type InputValueOrSignal<T> =
+  T extends InputSignalWithTransform<infer _ReadT, infer WriteT>
+    ? WriteT | WritableSignal<WriteT>
+    : never;
+
 export type Inputs<CMP_TYPE extends Type<unknown>> = Partial<{
-  [PROP in keyof InstanceType<CMP_TYPE> as InstanceType<CMP_TYPE>[PROP] extends InputSignal<unknown>
+  [PROP in keyof InstanceType<CMP_TYPE> as InstanceType<CMP_TYPE>[PROP] extends InputSignalWithTransform<
+    unknown,
+    infer _
+  >
     ? PROP
-    : never]: InstanceType<CMP_TYPE>[PROP] extends InputSignal<infer VALUE> ? VALUE : never;
+    : never]: InputValueOrSignal<InstanceType<CMP_TYPE>[PROP]>;
 }>;
 
 export type OutputKeys<CMP_TYPE extends Type<unknown>> = {
@@ -203,6 +212,14 @@ export interface RenderResult<T> extends BaseRenderResult<T> {
    * The ComponentFixture for the rendered component.
    */
   fixture: ComponentFixture<T>;
+
+  /**
+   * Rerenders the component with new input values.
+   *
+   * @param newInputs - An object containing the new input values keyed by input name.
+   * @returns A promise that resolves once the component has been updated and stabilized.
+   */
+  rerender: (newInputs: Inputs<Type<T>>) => Promise<void>;
 }
 
 /**
