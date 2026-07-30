@@ -5,7 +5,7 @@ import {
   withInterceptors,
 } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import type { Type, WritableSignal } from '@angular/core';
+import type { Injector, ProviderToken, Type, WritableSignal } from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -30,6 +30,7 @@ import {
   RoutingConfig,
 } from './types/render';
 import { isWSignal } from './utils/signals';
+import { assert } from 'vitest';
 
 const { debug, getElementLocatorSelectors } = utils;
 
@@ -132,8 +133,10 @@ export async function render<T>(
     const routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
     const router = TestBed.inject(Router);
     const fixture = routerHarness.fixture;
+
     const container = routerHarness.routeNativeElement!;
     const componentClassInstance = routerHarness.routeDebugElement?.componentInstance as T;
+    const inject = _inject(routerHarness.routeDebugElement?.injector);
 
     fixture.autoDetectChanges();
     await fixture.whenStable();
@@ -150,6 +153,7 @@ export async function render<T>(
       routerHarness,
       router,
       httpTesting,
+      inject,
       ...getElementLocatorSelectors(baseElement),
     };
   }
@@ -175,6 +179,7 @@ export async function render<T>(
     fixture.detectChanges();
     await fixture.whenStable();
   };
+  const inject = _inject(fixture.debugElement.injector);
 
   fixture.autoDetectChanges();
   await fixture.whenStable();
@@ -190,6 +195,7 @@ export async function render<T>(
     locator,
     httpTesting,
     rerender,
+    inject,
     ...getElementLocatorSelectors(baseElement),
   };
 }
@@ -315,4 +321,14 @@ function _createFeaturesHttp(httpConfig: HttpConfig | true): HttpFeature<HttpFea
     features.unshift(withInterceptors(interceptors));
   }
   return features;
+}
+/**
+ * @internal
+ * Closure that returns an `inject` function for the given injector. Throws if the injector is undefined.
+ * @param injector - The Angular injector to use for dependency resolution.
+ * @returns A function that takes a token and returns the corresponding instance from the injector.
+ */
+function _inject(injector: Injector | undefined): <T>(token: ProviderToken<T>) => T {
+  assert(injector, '[vitest-browser-angular] Injector is undefined. Cannot inject dependencies.');
+  return token => injector.get(token);
 }

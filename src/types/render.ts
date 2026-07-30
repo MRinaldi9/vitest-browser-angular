@@ -5,6 +5,7 @@ import type {
   InputSignalWithTransform,
   OutputEmitterRef,
   Provider,
+  ProviderToken,
   Type,
   WritableSignal,
 } from '@angular/core';
@@ -200,6 +201,13 @@ interface BaseRenderResult<T> extends LocatorSelectors {
    * The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled.
    */
   httpTesting?: HttpTestingController;
+
+  /**
+   * Injects a dependency based on the component injector.
+   * @param token - The token to inject.
+   * @returns The instance of the requested dependency.
+   */
+  inject: <T>(token: ProviderToken<T>) => T;
 }
 
 /**

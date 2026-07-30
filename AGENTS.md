@@ -10,17 +10,17 @@ The library targets **zoneless Angular** (zoneless-first). The `zone` Vitest pro
 
 Package manager is **pnpm** (>=11). Node 24.x in CI.
 
-- `pnpm test` — runs Vitest in **watch mode** (`watch: true` in `vitest.config.ts`). For a one-shot run use `pnpm test --run` (or `pnpm vitest run`).
+- `pnpm test` — runs Vitest in **watch mode** (`watch: true` in `vitest.config.ts`). **Auto-builds first** via `pretest` script (`"pretest": "pnpm build"`). For a one-shot run: `pnpm test --run`.
 - `pnpm test --run <file>` — single file. `pnpm test --run -t "name"` — single test by name.
+- `pnpm build` — tsdown to `dist/` (ESM + dts + publint). Tests import from `dist/`, so you need `dist/` present. The `pretest` script handles this automatically; only run `pnpm build` manually when developing without `pnpm test` (e.g. `pnpm vitest run` skips pretest).
 - `pnpm lint` / `pnpm lint:fix` — oxlint. `pnpm fmt` / `pnpm fmt:check` — oxfmt.
-- `pnpm build` — tsdown to `dist/` (ESM + dts + publint). Only needed for publishing; tests import source, not `dist`.
 
-CI order: **lint → test → build**. No standalone `typecheck` script; type errors surface during `test` (Angular compiler via vite) and `build` (dts generation).
+CI order: **lint → test** (test includes build via `pretest`). No standalone `typecheck` script.
 
 ## Testing
 
 - Runs in a real browser via **Playwright Chromium**. First run needs `pnpm exec playwright install --with-deps`.
-- Tests import from `../src` directly (Angular vite plugin compiles on the fly), never from `dist`.
+- Tests import from `@wismaz/vitest-browser-angular` which `vitest.config.ts` aliases to `dist/index.mjs`. **`dist/` must exist** — `pretest` builds it automatically; skip it only when running diretly via `pnpm vitest run`.
 - **Vitest globals are on** (`globals: true`): `test`, `expect`, `vi`, `describe`, `beforeEach`, `afterEach`, and `vitest` (lowercase, for fake timers) are available without import.
 - Two Vitest projects, routed by filename:
   - **`zoneless`** (primary): only `**/zoneless.test.ts`, zoneless setup.
