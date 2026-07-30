@@ -4,6 +4,8 @@ import { render } from '@wismaz/vitest-browser-angular';
 import { HelloWorldComponent } from './components/hello-world.component';
 import { ProductComponent } from './components/product.component';
 import { UserProfileComponent } from './components/user-profile.component';
+import { RoutedComponent } from './components/routed.component';
+import { utils } from 'vitest/browser';
 
 test('render', async () => {
   const { locator } = await render(HelloWorldComponent);
@@ -133,5 +135,30 @@ describe('rerender', () => {
     const result = await render(UserProfileComponent, { withRouting: true });
 
     expect((result as any).rerender).toBeUndefined();
+  });
+});
+
+describe('removeAngularAttributes', () => {
+  test('ng-version is present on the container by default', async () => {
+    const { container } = await render(HelloWorldComponent);
+
+    expect(container.hasAttribute('ng-version')).toBe(true);
+  });
+
+  test('ng-version is removed when removeAngularAttributes is true', async () => {
+    const { container } = await render(HelloWorldComponent, {
+      removeAngularAttributes: true,
+    });
+    utils.debug();
+    expect(container.hasAttribute('ng-version')).toBe(false);
+  });
+
+  test('removeAngularAttributes works with routed components', async () => {
+    const { container } = await render(RoutedComponent, {
+      withRouting: true,
+      removeAngularAttributes: true,
+    });
+
+    expect(container.hasAttribute('ng-version')).toBe(false);
   });
 });

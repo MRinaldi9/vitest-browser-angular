@@ -116,6 +116,7 @@ export async function render<T>(
   TestBed.configureTestingModule({
     imports,
     providers,
+    ...(options?.schema ? { schemas: [options.schema] } : {}),
   });
 
   if (options?.componentProviders) {
@@ -140,6 +141,10 @@ export async function render<T>(
 
     fixture.autoDetectChanges();
     await fixture.whenStable();
+
+    if (options?.removeAngularAttributes) {
+      _removeAngularAttrs(container);
+    }
 
     const locator = page.elementLocator(container);
 
@@ -183,6 +188,10 @@ export async function render<T>(
 
   fixture.autoDetectChanges();
   await fixture.whenStable();
+
+  if (options?.removeAngularAttributes) {
+    _removeAngularAttrs(container);
+  }
 
   const locator = page.elementLocator(container);
 
@@ -331,4 +340,8 @@ function _createFeaturesHttp(httpConfig: HttpConfig | true): HttpFeature<HttpFea
 function _inject(injector: Injector | undefined): <T>(token: ProviderToken<T>) => T {
   assert(injector, '[vitest-browser-angular] Injector is undefined. Cannot inject dependencies.');
   return token => injector.get(token);
+}
+
+function _removeAngularAttrs(element: HTMLElement) {
+  element.removeAttribute('ng-version');
 }

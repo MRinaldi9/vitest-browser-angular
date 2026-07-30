@@ -6,6 +6,7 @@ import type {
   OutputEmitterRef,
   Provider,
   ProviderToken,
+  SchemaMetadata,
   Type,
   WritableSignal,
 } from '@angular/core';
@@ -177,6 +178,25 @@ export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<un
 
   /** Additional imports for the testing module. */
   imports?: unknown[];
+
+  /**
+   * The schema metadata for the component.
+   *
+   * In case the component uses custom elements or other non-standard Angular elements, you can provide the appropriate schema metadata here.
+   * @example CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA
+   * @see https://angular.dev/api/core/NO_ERRORS_SCHEMA
+   * @see https://angular.dev/api/core/CUSTOM_ELEMENTS_SCHEMA
+   */
+  schema?: SchemaMetadata;
+
+  /**
+   * When `true`, removes Angular-specific attributes (`ng-version`)
+   * from the rendered DOM after render. Useful for cleaner snapshots
+   * and inline assertions on `container.innerHTML`.
+   *
+   * @default false
+   */
+  removeAngularAttributes?: boolean;
 }
 
 /**
