@@ -4,6 +4,11 @@
     - humble-geckos-boil
     - olive-ravens-love
     - pink-maps-sip
+"@wismaz/vitest-browser-angular@0.10.0":
+  dir: ""
+  intents:
+    - six-peaches-fold
+    - stale-peaches-travel
 "@wismaz/vitest-browser-angular@0.7.0":
   dir: ""
   intents:

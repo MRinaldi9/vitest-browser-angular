@@ -1,5 +1,13 @@
 # @wismaz/vitest-browser-angular
 
+## 0.10.0
+
+### Minor Changes
+
+- implemented schema option and remove Angular attribute option
+
+- Implemented inject function
+
 ## 0.9.0
 
 ### Minor Changes
