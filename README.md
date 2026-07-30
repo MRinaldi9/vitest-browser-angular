@@ -706,6 +706,113 @@ The render result mirrors `render` and adds directive-specific helpers:
 - `debug` — pretty-print the DOM for debugging.
 - `getByRole`, `getByText`, … — the standard `LocatorSelectors` scoped to `baseElement`.
 
+## Dependency Injection
+
+The render result provides an `inject` method to resolve dependencies from the rendered component's injector. Unlike `TestBed.inject()`, which only resolves from the root injector, `result.inject()` starts at the component injector and falls back up the hierarchy — so it works with both global `providers` and component-level `componentProviders`.
+
+```ts
+import { Component, inject, Injectable } from '@angular/core';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Injectable()
+class AnalyticsService {
+  track(event: string) {
+    return `tracked: ${event}`;
+  }
+}
+
+@Component({
+  template: '<button (click)="click()">Click me</button>',
+  providers: [AnalyticsService],
+})
+class TrackedComponent {
+  private analytics = inject(AnalyticsService);
+  click() {
+    this.analytics.track('click');
+  }
+}
+
+test('resolves a component-level service', async () => {
+  const { inject } = await render(TrackedComponent);
+
+  const analytics = inject(AnalyticsService);
+  expect(analytics.track('click')).toBe('tracked: click');
+});
+```
+
+`inject` also works with `InjectionToken`:
+
+```ts
+import { InjectionToken } from '@angular/core';
+
+const API_URL = new InjectionToken<string>('api-url');
+
+test('resolves an InjectionToken', async () => {
+  const { inject } = await render(TrackedComponent, {
+    providers: [{ provide: API_URL, useValue: 'https://api.example.com' }],
+  });
+
+  expect(inject(API_URL)).toBe('https://api.example.com');
+});
+```
+
+This is particularly useful for asserting on service state after user interactions, without having to expose the service on the component class.
+
+## Schema Options
+
+When your component template references elements that Angular does not recognise — such as web components (`<my-widget>`) or child components you do not want to import in the test — you can pass `NO_ERRORS_SCHEMA` or `CUSTOM_ELEMENTS_SCHEMA` via the `schema` option:
+
+```ts
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Component({
+  template: '<my-widget [config]="options"></my-widget>',
+})
+class ConsumerComponent {
+  options = { theme: 'dark' };
+}
+
+test('ignores unknown elements with NO_ERRORS_SCHEMA', async () => {
+  const { container } = await render(ConsumerComponent, {
+    schema: NO_ERRORS_SCHEMA,
+  });
+
+  expect(container.querySelector('my-widget')).toBeTruthy();
+});
+```
+
+Without the schema option, Angular would throw a compile-time error for unknown elements. This is a quick escape hatch when you want to isolate the component under test without mocking every child dependency.
+
+## Clean DOM
+
+By default Angular adds the `ng-version` attribute to the root element of the rendered component. In some cases — such as DOM snapshot assertions or visual regression testing — you may want a cleaner DOM without framework-specific attributes.
+
+Pass `removeAngularAttributes: true` to strip `ng-version` after render:
+
+```ts
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Component({
+  template: '<h1>Hello</h1>',
+})
+class SimpleComponent {}
+
+test('renders a clean DOM', async () => {
+  const { container } = await render(SimpleComponent, {
+    removeAngularAttributes: true,
+  });
+
+  expect(container.hasAttribute('ng-version')).toBe(false);
+  expect(container.innerHTML).toContain('<h1>Hello</h1>');
+});
+```
+
+The attribute is removed after Angular completes its initial change detection, so the component behaves normally — only the DOM output is cleaned up.
+
 ## Contributing
 
 Want to contribute? Yayy! 🎉
