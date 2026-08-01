@@ -9,6 +9,11 @@
   intents:
     - six-peaches-fold
     - stale-peaches-travel
+"@wismaz/vitest-browser-angular@0.11.0":
+  dir: ""
+  intents:
+    - itchy-tires-raise
+    - nine-trains-behave
 "@wismaz/vitest-browser-angular@0.7.0":
   dir: ""
   intents:

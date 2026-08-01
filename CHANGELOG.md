@@ -1,5 +1,13 @@
 # @wismaz/vitest-browser-angular
 
+## 0.11.0
+
+### Minor Changes
+
+- Improved rendering options types for a better DX
+
+- Integrated handling for model signal
+
 ## 0.10.0
 
 ### Minor Changes
