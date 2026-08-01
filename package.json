@@ -20,8 +20,6 @@
     "url": "git+https://github.com/MRinaldi9/vitest-browser-angular.git"
   },
   "files": [
-    "*.d.ts",
-    "*.mjs",
     "dist"
   ],
   "type": "module",
