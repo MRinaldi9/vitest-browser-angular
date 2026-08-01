@@ -1,4 +1,4 @@
-import { Component, InjectionToken } from '@angular/core';
+import { Component, Injectable, InjectionToken } from '@angular/core';
 import { render } from '@wismaz/vitest-browser-angular';
 import { HomeComponent } from './components/home.component';
 import { RoutedComponent } from './components/routed.component';
@@ -33,10 +33,14 @@ describe('inject feature', () => {
       componentProviders: [
         {
           provide: GreetingService,
-          useClass: class extends GreetingService {
-            override getGreeting(name: string): string {
-              return `Hi ${name}!`;
+          useFactory: () => {
+            @Injectable()
+            class MockGreetingService extends GreetingService {
+              override getGreeting(name: string): string {
+                return `Hi ${name}!`;
+              }
             }
+            return new MockGreetingService();
           },
         },
       ],

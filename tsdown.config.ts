@@ -8,5 +8,4 @@ export default defineConfig({
   dts: { build: true },
   publint: true,
   tsconfig: './tsconfig.app.json',
-  sourcemap: true,
 });
