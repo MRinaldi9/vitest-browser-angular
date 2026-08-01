@@ -8,5 +8,5 @@
     "types": ["node"],
     "erasableSyntaxOnly": true
   },
-  "include": ["*.config.ts"]
+  "include": ["*.config.ts", "env.d.ts"]
 }

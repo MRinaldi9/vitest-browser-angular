@@ -34,15 +34,18 @@
   "scripts": {
     "build": "tsdown",
     "change": "pnpm change",
-    "dev": "tsdown --watch --sourcemap",
+    "dev": "tsdown --sourcemap",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",
     "lint:fix": "pnpm lint --fix",
+    "prerelease": "pnpm build",
     "release": "pnpm publish -r",
     "release.pkg-pr-new": "pnpm dlx pkg-pr-new publish",
-    "pretest": "pnpm build",
-    "test": "vitest"
+    "_test": "pnpm build && vitest",
+    "test:types": "pnpm _test --run --project types",
+    "test:zone": "pnpm _test --run --project zone",
+    "test:zoneless": "pnpm _test --run --project zoneless"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "2.6.4",
