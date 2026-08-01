@@ -22,12 +22,15 @@ import {
   ComponentRenderOptions,
   DirectiveRenderOptions,
   DirectiveRenderResult,
+  RoutedFallbackRenderOptions,
   HttpConfig,
   Inputs,
   Outputs,
   RenderResult,
+  RoutedRenderOptions,
   RoutedRenderResult,
   RoutingConfig,
+  BaseRenderOptions,
 } from './types/render';
 import { isWSignal } from './utils/signals';
 import { assert } from 'vitest';
@@ -62,21 +65,19 @@ const { debug, getElementLocatorSelectors } = utils;
  */
 export async function render<T>(
   componentClass: Type<T>,
-  options?: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & { withRouting?: false },
+  options?: ComponentRenderOptions<Type<T>>,
 ): Promise<RenderResult<T>>;
 export async function render<T>(
   componentClass: Type<T>,
-  options: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & {
-    withRouting: true | RoutingConfig;
-  },
+  options: RoutedRenderOptions<Type<T>>,
 ): Promise<RoutedRenderResult<T>>;
 export async function render<T>(
   componentClass: Type<T>,
-  options?: ComponentRenderOptions<Type<T>>,
+  options: RoutedFallbackRenderOptions<Type<T>>,
 ): Promise<RenderResult<T> | RoutedRenderResult<T>>;
 export async function render<T>(
   componentClass: Type<T>,
-  options?: ComponentRenderOptions<Type<T>>,
+  options?: BaseRenderOptions<Type<T>>,
 ): Promise<RenderResult<T> | RoutedRenderResult<T>> {
   const imports = [componentClass, ...(options?.imports || [])];
   const providers = [...(options?.providers || [])];
@@ -88,6 +89,9 @@ export async function render<T>(
         'Inputs cannot be passed directly to routed components. ' +
         'Consider passing data via route params, query params, or route data instead.',
     );
+  }
+  if (options?.withRouting && options?.outputs) {
+    console.warn('[vitest-browser-angular] Using `outputs` with `withRouting` is not supported.');
   }
 
   const routingConfig: RoutingConfig | undefined = options?.withRouting

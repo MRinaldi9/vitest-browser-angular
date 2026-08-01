@@ -3,9 +3,8 @@ import { signal } from '@angular/core';
 import { render } from '@wismaz/vitest-browser-angular';
 import { HelloWorldComponent } from './components/hello-world.component';
 import { ProductComponent } from './components/product.component';
-import { UserProfileComponent } from './components/user-profile.component';
 import { RoutedComponent } from './components/routed.component';
-import { utils } from 'vitest/browser';
+import { UserProfileComponent } from './components/user-profile.component';
 
 test('render', async () => {
   const { locator } = await render(HelloWorldComponent);
@@ -149,7 +148,6 @@ describe('removeAngularAttributes', () => {
     const { container } = await render(HelloWorldComponent, {
       removeAngularAttributes: true,
     });
-    utils.debug();
     expect(container.hasAttribute('ng-version')).toBe(false);
   });
 

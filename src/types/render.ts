@@ -14,6 +14,7 @@ import type { ComponentFixture } from '@angular/core/testing';
 import type { Router, Routes } from '@angular/router';
 import type { RouterTestingHarness } from '@angular/router/testing';
 import type { Locator, LocatorSelectors, PrettyDOMOptions } from 'vitest/browser';
+import { Prettify } from './utils';
 
 /**
  * Configuration options for rendering components with Angular Router support.
@@ -80,8 +81,8 @@ type InputValueOrSignal<T> =
 
 export type Inputs<CMP_TYPE extends Type<unknown>> = Partial<{
   [PROP in keyof InstanceType<CMP_TYPE> as InstanceType<CMP_TYPE>[PROP] extends InputSignalWithTransform<
-    unknown,
-    infer _
+    infer _ReadT,
+    infer _WriteT
   >
     ? PROP
     : never]: InputValueOrSignal<InstanceType<CMP_TYPE>[PROP]>;
@@ -99,8 +100,8 @@ export type Outputs<CMP extends Type<unknown>> = Partial<{
     : never;
 }>;
 
-/** Options for rendering a component with `render()`. */
-export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> {
+/** Base options for rendering a component with `render()`. */
+export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> {
   /** The base element to render into.
    *  @default document.body
    * */
@@ -200,6 +201,44 @@ export interface ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<un
 }
 
 /**
+ * Options for `render()` when routing is **not** enabled (`withRouting` is `false` or omitted).
+ *
+ * `inputs` and `outputs` are available.
+ */
+export type ComponentRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> = Prettify<
+  Omit<BaseRenderOptions<CMP_TYPE>, 'withRouting'> & {
+    withRouting?: false;
+  }
+>;
+
+/**
+ * Options for `render()` when routing is enabled (`withRouting` is `true` or a `RoutingConfig`).
+ *
+ * `inputs` and `outputs` are not allowed — use route `data`/params instead.
+ */
+export type RoutedRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> = Prettify<
+  Omit<BaseRenderOptions<CMP_TYPE>, 'withRouting'> & {
+    withRouting: true | RoutingConfig;
+    inputs?: never;
+    outputs?: never;
+  }
+>;
+
+/**
+ * Fallback options for `render()` when the routing state cannot be statically determined
+ * (e.g. `withRouting` is a generic `boolean`).
+ *
+ * `inputs` and `outputs` are not allowed because the component might be routed.
+ */
+export type RoutedFallbackRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> = Prettify<
+  Omit<BaseRenderOptions<CMP_TYPE>, 'withRouting' | 'inputs' | 'outputs'> & {
+    withRouting?: boolean;
+    inputs?: never;
+    outputs?: never;
+  }
+>;
+
+/**
  * Base fields shared by every `render()` result, independent of whether routing is enabled.
  */
 interface BaseRenderResult<T> extends LocatorSelectors {
@@ -294,21 +333,11 @@ export interface RoutedRenderResult<T> extends BaseRenderResult<T> {
 }
 
 export interface RenderFn {
+  <T>(component: Type<T>, options?: ComponentRenderOptions<Type<T>>): Promise<RenderResult<T>>;
+  <T>(component: Type<T>, options: RoutedRenderOptions<Type<T>>): Promise<RoutedRenderResult<T>>;
   <T>(
     component: Type<T>,
-    options?: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & {
-      withRouting?: false;
-    },
-  ): Promise<RenderResult<T>>;
-  <T>(
-    component: Type<T>,
-    options: Omit<ComponentRenderOptions<Type<T>>, 'withRouting'> & {
-      withRouting: true | RoutingConfig;
-    },
-  ): Promise<RoutedRenderResult<T>>;
-  <T>(
-    component: Type<T>,
-    options?: ComponentRenderOptions<Type<T>>,
+    options: RoutedFallbackRenderOptions<Type<T>>,
   ): Promise<RenderResult<T> | RoutedRenderResult<T>>;
 }
 

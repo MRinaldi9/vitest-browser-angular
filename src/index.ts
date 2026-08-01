@@ -21,7 +21,10 @@ declare module 'vitest/browser' {
 
 export type {
   Inputs,
+  Outputs,
   ComponentRenderOptions,
+  RoutedFallbackRenderOptions,
+  RoutedRenderOptions,
   RenderFn,
   RenderResult,
   RoutedRenderResult,
