@@ -40,7 +40,7 @@
     "lint": "oxlint",
     "lint:fix": "pnpm lint --fix",
     "prerelease": "pnpm build",
-    "release": "pnpm publish -r",
+    "release": "pnpm publish -r --access public",
     "release.pkg-pr-new": "pnpm dlx pkg-pr-new publish",
     "_test": "pnpm build && vitest",
     "test:types": "pnpm _test --run --project types",
