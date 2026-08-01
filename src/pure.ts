@@ -17,7 +17,7 @@ import { ɵgetCleanupHook as getCleanupHook, TestBed } from '@angular/core/testi
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { page, PrettyDOMOptions, utils } from 'vitest/browser';
+import { page, PrettyDOMOptions, server, utils } from 'vitest/browser';
 import {
   ComponentRenderOptions,
   DirectiveRenderOptions,
@@ -32,7 +32,7 @@ import {
   RoutingConfig,
   BaseRenderOptions,
 } from './types/render';
-import { isWSignal } from './utils/signals';
+import { isModelSignal, isWSignal } from './utils/signals';
 import { assert } from 'vitest';
 
 const { debug, getElementLocatorSelectors } = utils;
@@ -150,6 +150,8 @@ export async function render<T>(
       _removeAngularAttrs(container);
     }
 
+    _ensureTestIdAttribute(baseElement);
+    _ensureTestIdAttribute(container);
     const locator = page.elementLocator(container);
 
     return {
@@ -175,6 +177,8 @@ export async function render<T>(
   const container = fixture.nativeElement;
   const componentClassInstance = fixture.componentInstance;
 
+  _attachModelWriteBack(componentClassInstance as Record<string, unknown>, inputSignals);
+
   const rerender = async (newInputs: Inputs<typeof componentClass>) => {
     for (const [key, value] of Object.entries(newInputs)) {
       if (key in inputSignals) {
@@ -197,6 +201,8 @@ export async function render<T>(
     _removeAngularAttrs(container);
   }
 
+  _ensureTestIdAttribute(baseElement);
+  _ensureTestIdAttribute(container);
   const locator = page.elementLocator(container);
 
   return {
@@ -298,6 +304,22 @@ export function cleanup(shouldTeardown = false) {
   return getCleanupHook(shouldTeardown)();
 }
 
+let testIdCounter = 0;
+
+/**
+ * @internal
+ * Ensures the element carries a stable `data-testid` so that
+ * `page.elementLocator()` generates a selector that survives DOM mutations
+ * (instead of a text-based selector that goes stale). Mirrors the fix in
+ * vitest-browser-react (see vitest-community/vitest-browser-react#42).
+ */
+function _ensureTestIdAttribute(element: HTMLElement) {
+  const attributeId = server.config.browser.locators.testIdAttribute;
+  if (!element.hasAttribute(attributeId)) {
+    element.setAttribute(attributeId, `__vitest_${testIdCounter++}__`);
+  }
+}
+
 /**
  * @internal
  * Builds binding configs for `TestBed.createComponent()` from the render options.
@@ -323,6 +345,26 @@ function _createBindingsComponent<C extends Type<unknown>>(
     outputBinding(key, value as (v: unknown) => unknown),
   );
   return { inputSignals, bindings: [...inputBindings, ...outputBindings] };
+}
+
+/**
+ * @internal
+ * Wires model input write-back after the component instance exists.
+ *
+ * `inputBinding()` already covers the input side of model inputs (they are `InputSignal`s).
+ * Subscribing to the model's `Change` output keeps the source signal in sync when the
+ * component updates the model, mirroring Angular's `twoWayBinding()`.
+ */
+function _attachModelWriteBack(
+  instance: Record<string, unknown>,
+  inputSignals: Record<string, WritableSignal<unknown>>,
+) {
+  for (const key of Object.keys(inputSignals)) {
+    const prop = instance[key];
+    if (isModelSignal(prop)) {
+      prop.subscribe(value => inputSignals[key].set(value));
+    }
+  }
 }
 
 function _createFeaturesHttp(httpConfig: HttpConfig | true): HttpFeature<HttpFeatureKind>[] {

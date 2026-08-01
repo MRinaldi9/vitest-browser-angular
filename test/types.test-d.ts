@@ -1,6 +1,4 @@
-/* Type-only tests. This file never executes - it is type-checked by
- * `tsc --noEmit -p tsconfig.test.json` and `vitest typecheck`. */
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, model, output, signal } from '@angular/core';
 import type { WritableSignal } from '@angular/core';
 import { expectTypeOf } from 'vitest';
 import { render } from '@wismaz/vitest-browser-angular';
@@ -21,6 +19,7 @@ export class TypeFixtureComponent {
   tags = input<string[]>([]);
   onSave = output<string>();
   onDelete = output<number>();
+  count = model(0);
 }
 
 test('type inference for inputs and outputs', () => {
@@ -28,6 +27,7 @@ test('type inference for inputs and outputs', () => {
     name?: string | WritableSignal<string>;
     age?: number | WritableSignal<number>;
     tags?: string[] | WritableSignal<string[]>;
+    count?: number | WritableSignal<number>;
   }>();
 
   expectTypeOf<Outputs<typeof TypeFixtureComponent>>().toEqualTypeOf<{
@@ -37,7 +37,9 @@ test('type inference for inputs and outputs', () => {
 });
 
 export async function rendersWithInputsAndOutputs() {
-  render(TypeFixtureComponent, { inputs: { name: 'x', age: signal(30), tags: ['a'] } });
+  render(TypeFixtureComponent, {
+    inputs: { name: 'x', age: signal(30), tags: ['a'], count: signal(10) },
+  });
   render(TypeFixtureComponent, {
     outputs: {
       onSave: (value: string) => {

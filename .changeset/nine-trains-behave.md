@@ -2,4 +2,4 @@
 "@wismaz/vitest-browser-angular": minor
 ---
 
-Improved rendering options types for a better DX
+Integrated handling for model signal

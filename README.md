@@ -216,7 +216,9 @@ test('render with inputs', async () => {
 });
 ```
 
-Works with both signal-based inputs (`input()`) and `@Input()` decorators.
+`render()` is built around Angular's modern signal-based APIs. Signal inputs (`input()`) bound as a `WritableSignal` stay reactive — updating the signal propagates to the component once change detection runs. Passing a `model()` input as a signal enables automatic two-way binding: values written inside the component are written back to your signal, mirroring Angular's `[(x)]` semantics.
+
+Plain `@Input()` decorator inputs are still supported for setting values, but the reactive-binding and write-back behaviors above only apply to signal inputs.
 
 ### Rerender
 
@@ -271,6 +273,44 @@ test('rerender with signals', async () => {
 ```
 
 `rerender` is not available when using `withRouting`.
+
+### Model Inputs (Two-way Binding)
+
+[`model()`](https://angular.dev/guide/signals/model) inputs are supported with automatic two-way binding. Pass a `WritableSignal` (e.g. `signal(...)`) as the value — `render()` binds the signal's current value to the component and writes any value the component emits back into the same signal, mirroring Angular's `[(count)]` template syntax.
+
+```ts
+import { Component, model } from '@angular/core';
+import { signal } from '@angular/core';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Component({
+  selector: 'app-counter',
+  template: `
+    <p data-testid="count">Count: {{ count() }}</p>
+    <button (click)="count.update(v => v + 1)">Increment</button>
+  `,
+})
+export class CounterComponent {
+  count = model(0);
+}
+
+test('two-way model binding', async () => {
+  const count = signal(0);
+  const { locator } = await render(CounterComponent, {
+    inputs: { count },
+  });
+
+  await expect.element(locator.getByTestId('count')).toHaveTextContent('Count: 0');
+
+  // The component updates the model — the value is written back to `count`
+  await locator.getByRole('button', { name: 'Increment' }).click();
+  expect(count()).toBe(1);
+  await expect.element(locator.getByTestId('count')).toHaveTextContent('Count: 1');
+});
+```
+
+You can also pass a plain value to set the model's initial state; in that case there is no source signal to write back to.
 
 ## Outputs
 
@@ -813,15 +853,32 @@ test('renders a clean DOM', async () => {
 
 The attribute is removed after Angular completes its initial change detection, so the component behaves normally — only the DOM output is cleaned up.
 
-## Contributing
+## Infer Tag Name
 
-Want to contribute? Yayy! 🎉
+By default, `render()` mounts the component on a `<div>` host element. Pass `inferTagName: true` to use the component's selector as the host tag name instead:
 
-Please read and follow our [Contributing Guidelines](CONTRIBUTING.md) to learn what are the right steps to take before contributing your time, effort and code.
+```ts
+import { Component } from '@angular/core';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
 
-Thanks 🙏
+@Component({
+  selector: 'app-hello-world',
+  template: '<h1>Hello World</h1>',
+})
+export class HelloWorld {}
 
-<br/>
+test('uses the component selector as the host tag', async () => {
+  const { container } = await render(HelloWorld, {
+    inferTagName: true,
+  });
+
+  expect(container.tagName).toBe('APP-HELLO-WORLD');
+});
+```
+
+This can be useful when the host element's tag name matters — for example when testing styles that target a specific element selector or when asserting on the DOM structure. `inferTagName` only works when `withRouting` is not enabled.
+
 
 ## Code Of Conduct
 
