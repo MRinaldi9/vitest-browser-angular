@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 0.11.1
+
+### Patch Changes
+
+- correct files to packing for publishing
+
 ## 0.11.0
 
 ### Minor Changes
