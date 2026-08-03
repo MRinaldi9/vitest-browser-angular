@@ -29,3 +29,14 @@ export class ServiceConsumerComponent {
   greeting = this.greetingService.getGreeting('World');
   message = 'This component uses injected services';
 }
+
+@Component({
+  selector: 'app-self-provided',
+  providers: [GreetingService],
+  template: `<h1 data-testid="greeting">{{ greeting }}</h1>`,
+})
+export class SelfProvidedComponent {
+  private greetingService = inject(GreetingService);
+
+  greeting = this.greetingService.getGreeting('World');
+}

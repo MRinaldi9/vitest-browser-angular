@@ -71,7 +71,7 @@ export interface RoutingConfig {
 }
 
 export interface HttpConfig {
-  interceptors?: HttpInterceptorFn[];
+  interceptors?: Array<HttpInterceptorFn>;
 }
 
 type InputValueOrSignal<T> =
@@ -174,11 +174,8 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
   /** Additional providers to configure in the testing module. */
   providers?: Array<Provider | EnvironmentProviders>;
 
-  /** Providers to add specifically to the component being rendered. */
-  componentProviders?: Array<Provider>;
-
   /** Additional imports for the testing module. */
-  imports?: unknown[];
+  imports?: Array<unknown>;
 
   /**
    * The schema metadata for the component.
@@ -198,6 +195,46 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
    * @default false
    */
   removeAngularAttributes?: boolean;
+
+  /**
+   * When provided, overrides the component's `imports` with the specified imports.
+   * Useful for mocking child components/directives/pipes used in the component's template.
+   *
+   * @example
+   *   ```typescript
+   *   await render(MyComponent, {
+   *     overrideImportsComponent: [
+   *       { replace: ChildComponent, with: MockComponent },
+   *     ],
+   *   });
+   *   ```;
+   */
+  overrideImportsComponent?: Array<{ replace: Type<unknown>; with: Type<unknown> }>;
+
+  /**
+   * Replaces providers declared on the component itself with alternative providers.
+   * Useful for mocking a service that the component declares in its `providers` array.
+   *
+   * `replace` must match the exact provider shape declared by the component:
+   * the same object shape (same `provide`/`useClass`/`useValue`/`useFactory` keys)
+   * or the bare class when the component uses the shorthand `providers: [Foo]`.
+   * `with` is a full provider that typically provides the same token as `replace`,
+   * e.g. `{ provide: Foo, useClass: MockFoo }`.
+   *
+   *
+   * @example
+   *   ```typescript
+   *   await render(MyComponent, {
+   *     overrideProvidersComponent: [
+   *       { replace: GreetingService, with: { provide: GreetingService, useClass: MockGreetingService } },
+   *     ],
+   *   });
+   *   ```;
+   */
+  overrideProvidersComponent?: Array<{
+    replace: Provider;
+    with: Provider;
+  }>;
 }
 
 /**
@@ -349,7 +386,7 @@ export interface DirectiveRenderOptions {
   hostProps?: Record<string, unknown>;
 
   /** Additional imports for the wrapper component. */
-  imports?: Type<unknown>[];
+  imports?: Array<Type<unknown>>;
 
   /** Additional providers for the test module. */
   providers?: Array<Provider | EnvironmentProviders>;

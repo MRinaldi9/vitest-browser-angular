@@ -2,7 +2,12 @@ import { Component, Injectable, InjectionToken } from '@angular/core';
 import { render } from '@wismaz/vitest-browser-angular';
 import { HomeComponent } from './components/home.component';
 import { RoutedComponent } from './components/routed.component';
-import { GreetingService, ServiceConsumerComponent } from './components/service-consumer.component';
+import {
+  CustomGreetingService,
+  GreetingService,
+  SelfProvidedComponent,
+  ServiceConsumerComponent,
+} from './components/service-consumer.component';
 
 const LOGIN_TOKEN = new InjectionToken<string>('login');
 
@@ -17,30 +22,38 @@ describe('inject feature', () => {
     expect(result.getGreeting('World')).toBe('Hello, World!');
   });
 
-  test('inject resolves a service from component-level providers', async () => {
-    const { inject } = await render(ServiceConsumerComponent, {
-      componentProviders: [GreetingService],
+  test('inject resolves a service from overridden component providers', async () => {
+    const { inject } = await render(SelfProvidedComponent, {
+      overrideProvidersComponent: [
+        {
+          replace: GreetingService,
+          with: { provide: GreetingService, useClass: CustomGreetingService },
+        },
+      ],
     });
 
     const result = inject(GreetingService);
-    expect(result).toBeInstanceOf(GreetingService);
-    expect(result.getGreeting('World')).toBe('Hello, World!');
+    expect(result).toBeInstanceOf(CustomGreetingService);
+    expect(result.getGreeting('World')).toBe('Welcome, World! Nice to see you.');
   });
 
   test('inject resolves from component-level when same token exists at both levels', async () => {
-    const { inject } = await render(ServiceConsumerComponent, {
+    const { inject } = await render(SelfProvidedComponent, {
       providers: [GreetingService],
-      componentProviders: [
+      overrideProvidersComponent: [
         {
-          provide: GreetingService,
-          useFactory: () => {
-            @Injectable()
-            class MockGreetingService extends GreetingService {
-              override getGreeting(name: string): string {
-                return `Hi ${name}!`;
+          replace: GreetingService,
+          with: {
+            provide: GreetingService,
+            useFactory: () => {
+              @Injectable()
+              class MockGreetingService extends GreetingService {
+                override getGreeting(name: string): string {
+                  return `Hi ${name}!`;
+                }
               }
-            }
-            return new MockGreetingService();
+              return new MockGreetingService();
+            },
           },
         },
       ],

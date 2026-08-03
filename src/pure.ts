@@ -10,6 +10,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   inputBinding,
+  isStandalone,
   outputBinding,
   signal,
 } from '@angular/core';
@@ -17,23 +18,23 @@ import { ɵgetCleanupHook as getCleanupHook, TestBed } from '@angular/core/testi
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { assert } from 'vitest';
 import { page, PrettyDOMOptions, server, utils } from 'vitest/browser';
 import {
+  BaseRenderOptions,
   ComponentRenderOptions,
   DirectiveRenderOptions,
   DirectiveRenderResult,
-  RoutedFallbackRenderOptions,
   HttpConfig,
   Inputs,
   Outputs,
   RenderResult,
+  RoutedFallbackRenderOptions,
   RoutedRenderOptions,
   RoutedRenderResult,
   RoutingConfig,
-  BaseRenderOptions,
 } from './types/render';
 import { isModelSignal, isWSignal } from './utils/signals';
-import { assert } from 'vitest';
 
 const { debug, getElementLocatorSelectors } = utils;
 
@@ -79,28 +80,42 @@ export async function render<T>(
   componentClass: Type<T>,
   options?: BaseRenderOptions<Type<T>>,
 ): Promise<RenderResult<T> | RoutedRenderResult<T>> {
-  const imports = [componentClass, ...(options?.imports || [])];
-  const providers = [...(options?.providers || [])];
-  const baseElement = options?.baseElement || document.body;
+  if (!isStandalone(componentClass)) {
+    throw new Error('[vitest-browser-angular] The component must be standalone.');
+  }
+  const {
+    baseElement = document.body,
+    imports = [],
+    providers = [],
+    withRouting,
+    inputs,
+    outputs,
+    withHttp,
+    schema,
+    removeAngularAttributes,
+    overrideImportsComponent = [],
+    overrideProvidersComponent = [],
+    inferTagName,
+  } = options || {};
 
-  if (options?.withRouting && options?.inputs) {
+  if (withRouting && inputs) {
     console.warn(
       '[vitest-browser-angular] Using `inputs` with `withRouting` is not supported. ' +
         'Inputs cannot be passed directly to routed components. ' +
         'Consider passing data via route params, query params, or route data instead.',
     );
   }
-  if (options?.withRouting && options?.outputs) {
+  if (withRouting && outputs) {
     console.warn('[vitest-browser-angular] Using `outputs` with `withRouting` is not supported.');
   }
 
-  const routingConfig: RoutingConfig | undefined = options?.withRouting
-    ? typeof options.withRouting === 'boolean'
+  const routingConfig = withRouting
+    ? typeof withRouting === 'boolean'
       ? {
           routes: [{ path: '**', component: componentClass }],
           initialRoute: '/',
         }
-      : options.withRouting
+      : withRouting
     : undefined;
 
   if (routingConfig) {
@@ -111,8 +126,8 @@ export async function render<T>(
     }
   }
 
-  if (options?.withHttp || (typeof options?.withHttp === 'boolean' && options.withHttp)) {
-    const httpFeatures = _createFeaturesHttp(options.withHttp);
+  if (withHttp || (typeof withHttp === 'boolean' && withHttp)) {
+    const httpFeatures = _createFeaturesHttp(withHttp);
 
     providers.push(provideHttpClient(...httpFeatures), provideHttpClientTesting());
   }
@@ -120,59 +135,27 @@ export async function render<T>(
   TestBed.configureTestingModule({
     imports,
     providers,
-    ...(options?.schema ? { schemas: [options.schema] } : {}),
+    ...(schema ? { schemas: [schema] } : {}),
   });
 
-  if (options?.componentProviders) {
-    TestBed.overrideComponent(componentClass, {
-      add: {
-        providers: options.componentProviders,
-      },
-    });
-  }
+  _overrideMetadataComponent(componentClass, 'imports', overrideImportsComponent);
+  _overrideMetadataComponent(componentClass, 'providers', overrideProvidersComponent);
 
   const httpTesting =
     TestBed.inject(HttpTestingController, undefined, { optional: true }) ?? undefined;
 
   if (routingConfig) {
-    const routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
-    const router = TestBed.inject(Router);
-    const fixture = routerHarness.fixture;
-
-    const container = routerHarness.routeNativeElement!;
-    const componentClassInstance = routerHarness.routeDebugElement?.componentInstance as T;
-    const inject = _inject(routerHarness.routeDebugElement?.injector);
-
-    fixture.autoDetectChanges();
-    await fixture.whenStable();
-
-    if (options?.removeAngularAttributes) {
-      _removeAngularAttrs(container);
-    }
-
-    _ensureTestIdAttribute(baseElement);
-    _ensureTestIdAttribute(container);
-    const locator = page.elementLocator(container);
-
-    return {
+    return await _routedRenderResult<T>(routingConfig, {
+      removeAngularAttributes,
       baseElement,
-      container,
-      fixture,
-      debug: (el = baseElement, maxLength, opts) => debug(el, maxLength, opts),
-      componentClassInstance,
-      locator,
-      routerHarness,
-      router,
       httpTesting,
-      inject,
-      ...getElementLocatorSelectors(baseElement),
-    };
+    });
   }
 
-  const { bindings, inputSignals } = _createBindingsComponent(options?.inputs, options?.outputs);
+  const { bindings, inputSignals } = _createBindingsComponent(inputs, outputs);
   const fixture = TestBed.createComponent(componentClass, {
     bindings,
-    inferTagName: options?.inferTagName,
+    inferTagName,
   });
   const container = fixture.nativeElement;
   const componentClassInstance = fixture.componentInstance;
@@ -197,7 +180,7 @@ export async function render<T>(
   fixture.autoDetectChanges();
   await fixture.whenStable();
 
-  if (options?.removeAngularAttributes) {
+  if (removeAngularAttributes) {
     _removeAngularAttrs(container);
   }
 
@@ -310,8 +293,7 @@ let testIdCounter = 0;
  * @internal
  * Ensures the element carries a stable `data-testid` so that
  * `page.elementLocator()` generates a selector that survives DOM mutations
- * (instead of a text-based selector that goes stale). Mirrors the fix in
- * vitest-browser-react (see vitest-community/vitest-browser-react#42).
+ * (instead of a text-based selector that goes stale).
  */
 function _ensureTestIdAttribute(element: HTMLElement) {
   const attributeId = server.config.browser.locators.testIdAttribute;
@@ -377,6 +359,53 @@ function _createFeaturesHttp(httpConfig: HttpConfig | true): HttpFeature<HttpFea
   }
   return features;
 }
+
+async function _routedRenderResult<T>(
+  routingConfig: RoutingConfig,
+  {
+    baseElement,
+    httpTesting,
+    removeAngularAttributes,
+  }: {
+    removeAngularAttributes?: boolean;
+    baseElement: HTMLElement;
+    httpTesting?: HttpTestingController;
+  },
+): Promise<RoutedRenderResult<T>> {
+  const routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
+  const router = TestBed.inject(Router);
+  const fixture = routerHarness.fixture;
+
+  const container = routerHarness.routeNativeElement!;
+  const componentClassInstance = routerHarness.routeDebugElement?.componentInstance as T;
+  const inject = _inject(routerHarness.routeDebugElement?.injector);
+
+  fixture.autoDetectChanges();
+  await fixture.whenStable();
+
+  if (removeAngularAttributes) {
+    _removeAngularAttrs(container);
+  }
+
+  _ensureTestIdAttribute(baseElement);
+  _ensureTestIdAttribute(container);
+  const locator = page.elementLocator(container);
+
+  return {
+    baseElement,
+    container,
+    fixture,
+    debug: (el = baseElement, maxLength, opts) => debug(el, maxLength, opts),
+    componentClassInstance,
+    locator,
+    routerHarness,
+    router,
+    httpTesting,
+    inject,
+    ...getElementLocatorSelectors(baseElement),
+  };
+}
+
 /**
  * @internal
  * Closure that returns an `inject` function for the given injector. Throws if the injector is undefined.
@@ -390,4 +419,20 @@ function _inject(injector: Injector | undefined): <T>(token: ProviderToken<T>) =
 
 function _removeAngularAttrs(element: HTMLElement) {
   element.removeAttribute('ng-version');
+}
+
+function _overrideMetadataComponent<T>(
+  componentClass: Type<T>,
+  metadataKey: keyof Pick<Component, 'imports' | 'providers'>,
+  overrides: Array<{ replace: unknown; with: unknown }>,
+) {
+  if (overrides.length === 0) return;
+  TestBed.overrideComponent(componentClass, {
+    remove: {
+      [metadataKey]: overrides.map(o => o.replace),
+    },
+    add: {
+      [metadataKey]: overrides.map(o => o.with),
+    },
+  });
 }

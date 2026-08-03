@@ -99,3 +99,26 @@ export async function returnsUnionForDynamicRouting() {
     RenderResult<TypeFixtureComponent> | RoutedRenderResult<TypeFixtureComponent>
   >();
 }
+
+export async function acceptsOverrideProvidersComponent() {
+  render(TypeFixtureComponent, {
+    overrideProvidersComponent: [
+      {
+        replace: TypeFixtureComponent,
+        with: { provide: TypeFixtureComponent, useClass: TypeFixtureComponent },
+      },
+    ],
+  });
+}
+
+export async function rejectsRemovedComponentProviders() {
+  // @ts-expect-error componentProviders was removed in favor of overrideProvidersComponent
+  render(TypeFixtureComponent, { componentProviders: [TypeFixtureComponent] });
+}
+
+export async function rejectsMalformedOverrideProvidersComponent() {
+  render(TypeFixtureComponent, {
+    // @ts-expect-error replace must be a provider
+    overrideProvidersComponent: [{ replace: 'nope', with: TypeFixtureComponent }],
+  });
+}
