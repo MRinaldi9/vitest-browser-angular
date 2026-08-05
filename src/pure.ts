@@ -138,8 +138,8 @@ export async function render<T>(
     ...(schema ? { schemas: [schema] } : {}),
   });
 
-  _overrideMetadataComponent(componentClass, 'imports', overrideImportsComponent);
-  _overrideMetadataComponent(componentClass, 'providers', overrideProvidersComponent);
+  _overrideMetadata(componentClass, 'component', 'imports', overrideImportsComponent);
+  _overrideMetadata(componentClass, 'component', 'providers', overrideProvidersComponent);
 
   const httpTesting =
     TestBed.inject(HttpTestingController, undefined, { optional: true }) ?? undefined;
@@ -228,27 +228,41 @@ export async function renderDirective<T>(
   directiveClass: Type<T>,
   options: DirectiveRenderOptions,
 ): Promise<DirectiveRenderResult<T>> {
-  const baseElement = options.baseElement || document.body;
-  const extraImports = options.imports || [];
+  const {
+    baseElement = document.body,
+    imports: extraImports = [],
+    hostProps = {},
+    providers = [],
+    overrideImportsDirective = [],
+    overrideProvidersDirective = [],
+    changeDetection = 'onPush',
+    template,
+    removeAngularAttributes,
+    schema,
+    withHttp,
+  } = options;
+
   if (extraImports.includes(directiveClass)) {
     throw new Error(
       `[renderDirective] The directive ${directiveClass.name} is already passed as the first argument and is added ` +
         `to the test module's \`imports\` automatically. Remove it from \`options.imports\` to avoid a duplicate import.`,
     );
   }
+  _overrideMetadata(directiveClass, 'directive', 'imports', overrideImportsDirective);
+  _overrideMetadata(directiveClass, 'directive', 'providers', overrideProvidersDirective);
+
   const imports = [directiveClass, ...extraImports];
-  const providers = [...(options.providers || [])];
-  const hostProps = options.hostProps || {};
-  const changeDetection = options.changeDetection || 'onPush';
+
   @Component({
     selector: 'test-host',
     imports,
-    template: options.template,
-    ...(changeDetection === 'eager' ? { changeDetection: ChangeDetectionStrategy.Eager } : {}),
+    template,
+    changeDetection:
+      changeDetection === 'eager' ? ChangeDetectionStrategy.Eager : ChangeDetectionStrategy.OnPush,
   })
   class TestHostComponent {
     constructor() {
-      if (options.hostProps) {
+      if (hostProps) {
         Object.assign(this, hostProps);
       }
     }
@@ -259,24 +273,33 @@ export async function renderDirective<T>(
     container,
     locator,
     debug,
+    httpTesting,
   } = await render(TestHostComponent, {
     providers,
     baseElement,
+    withHttp,
+    schema,
+    removeAngularAttributes,
   });
-  const directiveDE = hostFixture.debugElement.query(By.directive(directiveClass));
-  if (!directiveDE) {
+
+  const [directiveNode] = hostFixture.debugElement.queryAllNodes(By.directive(directiveClass));
+
+  if (!directiveNode) {
     throw new Error(
       `[renderDirective] Could not find directive ${directiveClass.name} in template. ` +
         `Make sure the template includes the directive selector`,
     );
   }
+  const inject = _inject(directiveNode.injector);
 
   return {
     container,
     baseElement,
     hostFixture,
     locator,
-    directiveInstance: directiveDE.injector.get(directiveClass) as T,
+    directiveInstance: directiveNode.injector.get(directiveClass) as T,
+    inject,
+    httpTesting,
     debug: (el = container, maxLength?: number, opts?: PrettyDOMOptions) =>
       debug(el, maxLength, opts),
     ...getElementLocatorSelectors(baseElement),
@@ -421,18 +444,26 @@ function _removeAngularAttrs(element: HTMLElement) {
   element.removeAttribute('ng-version');
 }
 
-function _overrideMetadataComponent<T>(
-  componentClass: Type<T>,
+function _overrideMetadata<T>(
+  instance: Type<T>,
+  type: 'component' | 'directive',
   metadataKey: keyof Pick<Component, 'imports' | 'providers'>,
   overrides: Array<{ replace: unknown; with: unknown }>,
 ) {
   if (overrides.length === 0) return;
-  TestBed.overrideComponent(componentClass, {
+
+  const override = {
     remove: {
       [metadataKey]: overrides.map(o => o.replace),
     },
     add: {
       [metadataKey]: overrides.map(o => o.with),
     },
-  });
+  };
+
+  if (type === 'component') {
+    TestBed.overrideComponent(instance, override);
+  } else {
+    TestBed.overrideDirective(instance, override);
+  }
 }

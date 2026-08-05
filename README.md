@@ -692,7 +692,7 @@ For overriding a `providedIn: 'root'` service (provided at root/test level, wher
 
 ## Directives
 
-Use `renderDirective` to test attribute directives. It wraps the directive in a generated host component and renders the provided `template`, so you can drive the directive with real DOM events and assert against the host element.
+Use `renderDirective` to test both **attribute** and **structural** directives. It wraps the directive in a generated host component and renders the provided `template`, so you can drive the directive with real DOM events and assert against the host element.
 
 ```ts
 import { Directive, input, output } from '@angular/core';
@@ -759,6 +759,47 @@ const { getByText } = await renderDirective(HighlightDirective, {
 });
 ```
 
+### Structural directives
+
+Structural directives work out of the box: `renderDirective` finds the directive on its `<ng-template>` anchor even though it never appears as a real element in the DOM.
+
+```ts
+import { Directive, effect, input, TemplateRef, ViewContainerRef } from '@angular/core';
+
+@Directive({ selector: '[appUnless]' })
+export class UnlessDirective {
+  readonly unless = input(false, { alias: 'appUnless' });
+  private templateRef = inject(TemplateRef);
+  private vcr = inject(ViewContainerRef);
+  constructor() {
+    effect(() => {
+      this.vcr.clear();
+      if (!this.unless()) this.vcr.createEmbeddedView(this.templateRef);
+    });
+  }
+}
+
+test('renders a structural directive', async () => {
+  const show = signal(false);
+  const { directiveInstance, container, hostFixture } = await renderDirective(UnlessDirective, {
+    template: `<div *appUnless="show()">Hidden content</div>`,
+    hostProps: { show },
+  });
+
+  expect(container.textContent).toContain('Hidden content');
+
+  show.set(true);
+  await hostFixture.whenStable();
+  expect(container.textContent).not.toContain('Hidden content');
+});
+```
+
+### Render options
+
+`renderDirective` forwards the same render options as `render` (except routing, `inputs`, `outputs` and `inferTagName`):
+
+- `overrideImportsDirective` / `overrideProvidersDirective` — override the tested directive's `imports`/`providers` metadata to mock its dependencies.
+
 ### Result
 
 The render result mirrors `render` and adds directive-specific helpers:
@@ -768,6 +809,8 @@ The render result mirrors `render` and adds directive-specific helpers:
 - `fixture` — the host component's `ComponentFixture`.
 - `container` / `baseElement` — the rendered elements.
 - `debug` — pretty-print the DOM for debugging.
+- `inject` — resolve dependencies from the **directive's** injector (also works for providers declared on the directive itself).
+- `httpTesting` — the `HttpTestingController` when `withHttp` is enabled.
 - `getByRole`, `getByText`, … — the standard `LocatorSelectors` scoped to `baseElement`.
 
 ## Dependency Injection

@@ -378,25 +378,39 @@ export interface RenderFn {
   ): Promise<RenderResult<T> | RoutedRenderResult<T>>;
 }
 
-export interface DirectiveRenderOptions {
-  /** Template to render the directive in. Must include the directive selector. */
-  template: string;
+export type DirectiveRenderOptions = Prettify<
+  Omit<
+    BaseRenderOptions,
+    | 'withRouting'
+    | 'inputs'
+    | 'outputs'
+    | 'inferTagName'
+    | 'imports'
+    | 'overrideImportsComponent'
+    | 'overrideProvidersComponent'
+  > & {
+    /** Template to render the directive in. Must include the directive selector. */
+    template: string;
 
-  /** Host component input values to pass and make reactive. */
-  hostProps?: Record<string, unknown>;
+    /** Host component input values to pass and make reactive. */
+    hostProps?: Record<string, unknown>;
 
-  /** Additional imports for the wrapper component. */
-  imports?: Array<Type<unknown>>;
+    /** Additional imports for the wrapper component. */
+    imports?: Array<Type<unknown>>;
 
-  /** Additional providers for the test module. */
-  providers?: Array<Provider | EnvironmentProviders>;
+    /** Change detection strategy for the host component. Defaults to 'onPush'. */
+    changeDetection?: 'eager' | 'onPush';
 
-  /** The base element for screen queries. Defaults to document.body. */
-  baseElement?: HTMLElement;
+    /** When provided, overrides the directive `imports` with the specified imports. */
+    overrideImportsDirective?: Array<{ replace: Type<unknown>; with: Type<unknown> }>;
 
-  /** Change detection strategy for the host component. Defaults to 'onPush'. */
-  changeDetection?: 'eager' | 'onPush';
-}
+    /** Replaces providers declared on the directive itself with alternative providers. */
+    overrideProvidersDirective?: Array<{
+      replace: Provider;
+      with: Provider;
+    }>;
+  }
+>;
 
 export interface DirectiveRenderResult<T> extends LocatorSelectors {
   container: HTMLElement;
@@ -421,4 +435,16 @@ export interface DirectiveRenderResult<T> extends LocatorSelectors {
     maxLength?: number,
     options?: PrettyDOMOptions,
   ): void;
+
+  /**
+   * Injects a dependency based on the directive's injector.
+   * @param token - The token to inject.
+   * @returns The instance of the requested dependency.
+   */
+  inject: <T>(token: ProviderToken<T>) => T;
+
+  /**
+   * The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled.
+   */
+  httpTesting?: HttpTestingController;
 }

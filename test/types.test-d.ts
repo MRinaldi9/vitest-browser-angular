@@ -1,13 +1,16 @@
-import { Component, input, model, output, signal } from '@angular/core';
-import type { WritableSignal } from '@angular/core';
+import { Component, input, model, NO_ERRORS_SCHEMA, output, signal } from '@angular/core';
+import type { ProviderToken, WritableSignal } from '@angular/core';
+import type { HttpTestingController } from '@angular/common/http/testing';
 import { expectTypeOf } from 'vitest';
-import { render } from '@wismaz/vitest-browser-angular';
+import { render, renderDirective } from '@wismaz/vitest-browser-angular';
 import type {
+  DirectiveRenderResult,
   Inputs,
   Outputs,
   RenderResult,
   RoutedRenderResult,
 } from '@wismaz/vitest-browser-angular';
+import { ChangeClass } from './directives/change-class';
 
 @Component({
   selector: 'app-type-fixture',
@@ -121,4 +124,39 @@ export async function rejectsMalformedOverrideProvidersComponent() {
     // @ts-expect-error replace must be a provider
     overrideProvidersComponent: [{ replace: 'nope', with: TypeFixtureComponent }],
   });
+}
+
+export async function acceptsSharedRenderOptions() {
+  renderDirective(ChangeClass, {
+    template: `<button test>Test</button>`,
+    withHttp: true,
+    schema: NO_ERRORS_SCHEMA,
+    removeAngularAttributes: true,
+    overrideImportsDirective: [{ replace: ChangeClass, with: ChangeClass }],
+    overrideProvidersDirective: [
+      { replace: ChangeClass, with: { provide: ChangeClass, useClass: ChangeClass } },
+    ],
+  });
+}
+
+export async function rejectsRoutingOptions() {
+  // @ts-expect-error withRouting is not allowed on renderDirective
+  renderDirective(ChangeClass, { template: `<button test>Test</button>`, withRouting: true });
+  // @ts-expect-error inputs are not allowed on renderDirective
+  renderDirective(ChangeClass, { template: `<button test>Test</button>`, inputs: {} });
+  // @ts-expect-error outputs are not allowed on renderDirective
+  renderDirective(ChangeClass, { template: `<button test>Test</button>`, outputs: {} });
+  // @ts-expect-error inferTagName is not allowed on renderDirective
+  renderDirective(ChangeClass, { template: `<button test>Test</button>`, inferTagName: true });
+}
+
+export async function directiveResultExposesInjectAndHttpTesting() {
+  const result = await renderDirective(ChangeClass, {
+    template: `<button test>Test</button>`,
+    withHttp: true,
+  });
+
+  expectTypeOf(result).toEqualTypeOf<DirectiveRenderResult<ChangeClass>>();
+  expectTypeOf(result.inject).toEqualTypeOf<<T>(token: ProviderToken<T>) => T>();
+  expectTypeOf(result.httpTesting).toEqualTypeOf<HttpTestingController | undefined>();
 }
