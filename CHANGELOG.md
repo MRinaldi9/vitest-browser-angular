@@ -1,5 +1,13 @@
 # @wismaz/vitest-browser-angular
 
+## 0.13.0
+
+### Minor Changes
+
+- Enhance `renderDirective` for supporting structural directive
+
+  - forwaded options in renderDirective and integrated new options
+
 ## 0.12.0
 
 ### Minor Changes

@@ -22,6 +22,10 @@
   dir: ""
   intents:
     - cuddly-moons-float
+"@wismaz/vitest-browser-angular@0.13.0":
+  dir: ""
+  intents:
+    - afraid-clocks-type
 "@wismaz/vitest-browser-angular@0.7.0":
   dir: ""
   intents:
