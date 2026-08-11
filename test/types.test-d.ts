@@ -26,17 +26,21 @@ export class TypeFixtureComponent {
 }
 
 test('type inference for inputs and outputs', () => {
-  expectTypeOf<Inputs<typeof TypeFixtureComponent>>().toEqualTypeOf<{
-    name?: string | WritableSignal<string>;
-    age?: number | WritableSignal<number>;
-    tags?: string[] | WritableSignal<string[]>;
-    count?: number | WritableSignal<number>;
-  }>();
+  expectTypeOf<Inputs<typeof TypeFixtureComponent>>().toEqualTypeOf<
+    {
+      name?: string | WritableSignal<string>;
+      age?: number | WritableSignal<number>;
+      tags?: string[] | WritableSignal<string[]>;
+      count?: number | WritableSignal<number>;
+    } & Record<string, unknown>
+  >();
 
-  expectTypeOf<Outputs<typeof TypeFixtureComponent>>().toEqualTypeOf<{
-    onSave?: (value: string) => void;
-    onDelete?: (value: number) => void;
-  }>();
+  expectTypeOf<Outputs<typeof TypeFixtureComponent>>().toEqualTypeOf<
+    {
+      onSave?: (value: string) => void;
+      onDelete?: (value: number) => void;
+    } & Record<string, unknown>
+  >();
 });
 
 export async function rendersWithInputsAndOutputs() {
@@ -52,8 +56,7 @@ export async function rendersWithInputsAndOutputs() {
   });
 }
 
-export async function rejectsUnknownInputKeys() {
-  // @ts-expect-error unknown input key
+export async function acceptsUnknownInputKeys() {
   render(TypeFixtureComponent, { inputs: { naem: 'x' } });
 }
 
@@ -62,8 +65,7 @@ export async function rejectsWrongInputValueTypes() {
   render(TypeFixtureComponent, { inputs: { age: 'not a number' } });
 }
 
-export async function rejectsUnknownOutputKeys() {
-  // @ts-expect-error unknown output key
+export async function acceptsUnknownOutputKeys() {
   render(TypeFixtureComponent, { outputs: { onWrong: () => {} } });
 }
 

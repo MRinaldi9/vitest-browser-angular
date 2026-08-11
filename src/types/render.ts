@@ -86,7 +86,8 @@ export type Inputs<CMP_TYPE extends Type<unknown>> = Partial<{
   >
     ? PROP
     : never]: InputValueOrSignal<InstanceType<CMP_TYPE>[PROP]>;
-}>;
+}> &
+  Record<string, unknown>;
 
 export type OutputKeys<CMP_TYPE extends Type<unknown>> = {
   [PROP in keyof InstanceType<CMP_TYPE>]: InstanceType<CMP_TYPE>[PROP] extends OutputEmitterRef<unknown>
@@ -98,7 +99,8 @@ export type Outputs<CMP extends Type<unknown>> = Partial<{
   [K in OutputKeys<CMP>]: InstanceType<CMP>[K] extends OutputEmitterRef<infer T>
     ? (value: T) => void
     : never;
-}>;
+}> &
+  Record<string, unknown>;
 
 /** Base options for rendering a component with `render()`. */
 export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> {

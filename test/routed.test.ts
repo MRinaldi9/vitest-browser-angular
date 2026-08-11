@@ -44,7 +44,7 @@ test('should render routed component with full routing configuration and navigat
   await expect.element(locator).toHaveTextContent('Home Page');
 
   // Navigate to about using router.navigate
-  await router!.navigate(['/about']);
+  await router.navigate(['/about']);
   await expect.element(locator).toHaveTextContent('About Page');
   expect(router?.url).toEqual('/about');
 
