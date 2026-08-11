@@ -30,6 +30,10 @@
   dir: ""
   intents:
     - shiny-times-yawn
+"@wismaz/vitest-browser-angular@0.14.0":
+  dir: ""
+  intents:
+    - clean-things-wink
 "@wismaz/vitest-browser-angular@0.7.0":
   dir: ""
   intents:

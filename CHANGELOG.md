@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 0.14.0
+
+### Minor Changes
+
+- Implemented support for deferred block
+
 ## 0.13.1
 
 ### Patch Changes
