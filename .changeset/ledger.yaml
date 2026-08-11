@@ -26,6 +26,10 @@
   dir: ""
   intents:
     - afraid-clocks-type
+"@wismaz/vitest-browser-angular@0.13.1":
+  dir: ""
+  intents:
+    - shiny-times-yawn
 "@wismaz/vitest-browser-angular@0.7.0":
   dir: ""
   intents:

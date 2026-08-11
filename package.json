@@ -1,6 +1,6 @@
 {
   "name": "@wismaz/vitest-browser-angular",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "private": false,
   "description": "Render Angular components in Vitest Browser Mode",
   "keywords": [

@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 0.13.1
+
+### Patch Changes
+
+- Enhance types for input and output render function
+
 ## 0.13.0
 
 ### Minor Changes
