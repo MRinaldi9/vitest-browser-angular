@@ -30,9 +30,9 @@ CI order: **lint → test** (the test run also covers type checking via the `typ
   - **`zoneless`** (primary): only `**/zoneless.test.ts`, zoneless setup.
   - **`zone`** (compat coverage): every other `*.test.ts`, with zone.js.
   - **`types`**: no runtime tests (`include: []`), runs Vitest's `typecheck` on `test/**/*.test-d.ts`.
-  - So a file named `foo.test.ts` runs under `zone`; name it `zoneless.test.ts` to run zoneless; `types.test-d.ts` runs only in the typechecker.
+  - So a file named `foo.test.ts` runs under `zone`; name it `zoneless.test.ts` to run zoneless; a `*.test-d.ts` file runs only in the typechecker.
 - `teardown.destroyAfterEach` is `false` in both setups; cleanup runs via the `vitest:component-cleanup` hook registered in `src/index.ts`.
-- **Type-level tests** live in `test/types.test-d.ts` using `expectTypeOf` + `@ts-expect-error`. The `*.test-d.ts` name keeps them out of the runtime browser runs (they never execute); they are checked by the `types` Vitest project (`test:types`, also run by the default `_test`) and by the Angular plugin's `tsconfig.test.json`.
+- **Type-level tests** live in `test/types/*.test-d.ts`, split per feature (mirroring the runtime files: `render`, `routed`, `render-directive`, `override-providers`, `defer`) using `expectTypeOf` + `@ts-expect-error`, with the shared fixture in `test/components/type-fixture.component.ts`. The `*.test-d.ts` name keeps them out of the runtime browser runs (they never execute); they are checked by the `types` Vitest project (`test:types`, also run by the default `_test`) and by the Angular plugin's `tsconfig.test.json`. Tests are real `test()`/`describe()` lists. Note: `@ts-expect-error` requires the errored statement on a single line (oxfmt wraps long object literals, breaking adjacency); and a `boolean`-typed const initialized with a literal gets flow-narrowed inside arrow callbacks, so declare it as `true as boolean` when overload discrimination matters.
 
 ## Code style & hooks
 
