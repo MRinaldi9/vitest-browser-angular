@@ -661,6 +661,117 @@ test('applies custom interceptors', async () => {
 
 When `withHttp` is omitted, `httpTesting` is `undefined` and `HttpClient` is not configured.
 
+## Defer Blocks
+
+Angular's `@defer` blocks defer part of the template until a trigger fires (idle, interaction, viewport, timer, ...). By default, `render()` keeps defer blocks **paused** (`deferBlockBehavior: DeferBlockBehavior.Manual`), so deferred content is not rendered and triggers don't fire on their own. This gives you deterministic control over when each block transitions.
+
+```html
+<div>
+  @defer {
+    <p>Deferred content</p>
+  } @placeholder {
+    <p>Placeholder</p>
+  } @loading {
+    <p>Loading...</p>
+  }
+</div>
+```
+
+### Render a defer block
+
+Use `renderDeferBlock(state, index?)` on the render result to transition one (or all) defer blocks. The available states come from `DeferBlockState` (imported from `@angular/core/testing`): `Placeholder`, `Loading`, `Complete`, and `Error`.
+
+Render **all** blocks in a given state:
+
+```ts
+import { DeferBlockState } from '@angular/core/testing';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+test('renders deferred content', async () => {
+  const { locator, renderDeferBlock } = await render(DeferDemoComponent);
+
+  await expect.element(locator.getByTestId('placeholder')).toBeVisible();
+
+  await renderDeferBlock(DeferBlockState.Complete);
+
+  await expect.element(locator.getByTestId('deferred')).toBeVisible();
+});
+```
+
+Target a **single** block by its index (matching the order of `fixture.getDeferBlocks()`):
+
+```ts
+test('renders only the first defer block', async () => {
+  const { locator, renderDeferBlock } = await render(DeferDemoComponent);
+
+  await renderDeferBlock(DeferBlockState.Loading, 0);
+
+  await expect.element(locator.getByTestId('loading')).toBeVisible();
+});
+```
+
+Passing an index with no matching block throws an error.
+
+### Set initial states at render time
+
+The `deferBlockStates` option applies a state (or several) right after render. Pass a single `DeferBlockState` to apply to every block:
+
+```ts
+const { locator } = await render(DeferDemoComponent, {
+  deferBlockStates: DeferBlockState.Complete,
+});
+
+await expect.element(locator.getByTestId('deferred')).toBeVisible();
+```
+
+Or an array of `{ deferBlockState, deferBlockIndex }` to target specific blocks:
+
+```ts
+const { locator } = await render(DeferDemoComponent, {
+  deferBlockStates: [{ deferBlockState: DeferBlockState.Loading, deferBlockIndex: 0 }],
+});
+
+await expect.element(locator.getByTestId('loading')).toBeVisible();
+```
+
+### Playthrough mode
+
+Set `deferBlockBehavior: DeferBlockBehavior.Playthrough` to let defer triggers fire naturally, like in a real browser:
+
+```ts
+import { Component } from '@angular/core';
+import { DeferBlockBehavior } from '@angular/core/testing';
+import { test, expect } from 'vitest';
+import { render } from 'vitest-browser-angular';
+
+@Component({
+  template: `
+    <div>
+      @defer (on interaction) {
+        <p data-testid="deferred">Interaction content</p>
+      } @placeholder {
+        <button data-testid="show">Show</button>
+      }
+    </div>
+  `,
+})
+export class DeferInteractionComponent {}
+
+test('plays through interaction triggers', async () => {
+  const { locator } = await render(DeferInteractionComponent, {
+    deferBlockBehavior: DeferBlockBehavior.Playthrough,
+  });
+
+  await locator.getByTestId('show').click();
+  await expect
+    .element(locator.getByTestId('deferred'))
+    .toHaveTextContent('Interaction content');
+});
+```
+
+`renderDeferBlock` and `deferBlockStates` work in both modes. `renderDeferBlock` is available on every render result: `render()`, routed `render()` (with `withRouting`), and `renderDirective()`.
+
 ## Component Providers
 
 If you need to replace a [component provider](https://angular.dev/guide/di/defining-dependency-providers#component-or-directive-providers) declared on the component itself (e.g. to mock a service), use the `overrideProvidersComponent` option.
