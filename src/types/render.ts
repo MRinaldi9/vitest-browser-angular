@@ -10,7 +10,7 @@ import type {
   Type,
   WritableSignal,
 } from '@angular/core';
-import type { ComponentFixture } from '@angular/core/testing';
+import type { ComponentFixture, DeferBlockBehavior, DeferBlockState } from '@angular/core/testing';
 import type { Router, Routes } from '@angular/router';
 import type { RouterTestingHarness } from '@angular/router/testing';
 import type { Locator, LocatorSelectors, PrettyDOMOptions } from 'vitest/browser';
@@ -72,6 +72,16 @@ export interface RoutingConfig {
 
 export interface HttpConfig {
   interceptors?: Array<HttpInterceptorFn>;
+}
+
+/**
+ * Configures the initial state of a single `@defer` block by index.
+ */
+export interface DeferBlockStateConfig {
+  /** The state to render the defer block in. */
+  deferBlockState: DeferBlockState;
+  /** The index of the defer block to target, matching `fixture.getDeferBlocks()` order. */
+  deferBlockIndex: number;
 }
 
 type InputValueOrSignal<T> =
@@ -199,6 +209,38 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
   removeAngularAttributes?: boolean;
 
   /**
+   * Sets the behavior of `@defer` blocks in the rendered component.
+   *
+   * Defaults to `DeferBlockBehavior.Manual`, which keeps defer blocks in a
+   * paused state so `renderDeferBlock`/`deferBlockStates` can control them
+   * deterministically. Set to `DeferBlockBehavior.Playthrough` to let blocks
+   * play through like they would in a real browser.
+   *
+   * @default DeferBlockBehavior.Manual
+   * @see https://angular.dev/api/core/testing/DeferBlockBehavior
+   */
+  deferBlockBehavior?: DeferBlockBehavior;
+
+  /**
+   * Sets the initial state of the `@defer` blocks right after render.
+   *
+   * Pass a single `DeferBlockState` to apply to every defer block, or an array
+   * of `{ deferBlockState, deferBlockIndex }` to target specific blocks.
+   *
+   * @example
+   *   ```typescript
+   *   // All blocks in the Complete state
+   *   await render(MyComponent, { deferBlockStates: DeferBlockState.Complete });
+   *
+   *   // Only the first block in the Loading state
+   *   await render(MyComponent, {
+   *     deferBlockStates: [{ deferBlockState: DeferBlockState.Loading, deferBlockIndex: 0 }],
+   *   });
+   *   ```
+   */
+  deferBlockStates?: DeferBlockState | Array<DeferBlockStateConfig>;
+
+  /**
    * When provided, overrides the component's `imports` with the specified imports.
    * Useful for mocking child components/directives/pipes used in the component's template.
    *
@@ -306,6 +348,21 @@ interface BaseRenderResult<T> extends LocatorSelectors {
    * @returns The instance of the requested dependency.
    */
   inject: <T>(token: ProviderToken<T>) => T;
+
+  /**
+   * Sets the state of one (or all) `@defer` blocks of the rendered component.
+   *
+   * With no `deferBlockIndex`, every defer block is rendered in the given
+   * state. Pass an index to target a specific block.
+   *
+   * @example
+   *   ```typescript
+   *   const { renderDeferBlock } = await render(MyComponent);
+   *   await renderDeferBlock(DeferBlockState.Complete);
+   *   await renderDeferBlock(DeferBlockState.Loading, 0);
+   *   ```
+   */
+  renderDeferBlock: (deferBlockState: DeferBlockState, deferBlockIndex?: number) => Promise<void>;
 }
 
 /**
@@ -449,4 +506,12 @@ export interface DirectiveRenderResult<T> extends LocatorSelectors {
    * The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled.
    */
   httpTesting?: HttpTestingController;
+
+  /**
+   * Sets the state of one (or all) `@defer` blocks of the host component.
+   *
+   * With no `deferBlockIndex`, every defer block is rendered in the given
+   * state. Pass an index to target a specific block.
+   */
+  renderDeferBlock: (deferBlockState: DeferBlockState, deferBlockIndex?: number) => Promise<void>;
 }

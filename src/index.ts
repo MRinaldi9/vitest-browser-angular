@@ -23,6 +23,7 @@ export type {
   Inputs,
   Outputs,
   ComponentRenderOptions,
+  DeferBlockStateConfig,
   RoutedFallbackRenderOptions,
   RoutedRenderOptions,
   RenderFn,

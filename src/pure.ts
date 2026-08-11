@@ -17,7 +17,13 @@ import {
   outputBinding,
   signal,
 } from '@angular/core';
-import { ɵgetCleanupHook as getCleanupHook, TestBed } from '@angular/core/testing';
+import {
+  ɵgetCleanupHook as getCleanupHook,
+  TestBed,
+  type ComponentFixture,
+  DeferBlockBehavior,
+  DeferBlockState,
+} from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -26,6 +32,7 @@ import { page, PrettyDOMOptions, server, utils } from 'vitest/browser';
 import {
   BaseRenderOptions,
   ComponentRenderOptions,
+  DeferBlockStateConfig,
   DirectiveRenderOptions,
   DirectiveRenderResult,
   HttpConfig,
@@ -99,6 +106,8 @@ export async function render<T>(
     overrideImportsComponent = [],
     overrideProvidersComponent = [],
     inferTagName,
+    deferBlockBehavior = DeferBlockBehavior.Manual,
+    deferBlockStates,
   } = options || {};
 
   if (withRouting && inputs) {
@@ -138,11 +147,14 @@ export async function render<T>(
   TestBed.configureTestingModule({
     imports,
     providers,
+    deferBlockBehavior,
     ...(schema ? { schemas: [schema] } : {}),
   });
 
   _overrideMetadata(componentClass, 'component', 'imports', overrideImportsComponent);
   _overrideMetadata(componentClass, 'component', 'providers', overrideProvidersComponent);
+
+  await TestBed.compileComponents();
 
   const httpTesting =
     TestBed.inject(HttpTestingController, undefined, { optional: true }) ?? undefined;
@@ -152,6 +164,7 @@ export async function render<T>(
       removeAngularAttributes,
       baseElement,
       httpTesting,
+      deferBlockStates,
     });
   }
 
@@ -183,6 +196,10 @@ export async function render<T>(
   fixture.autoDetectChanges();
   await fixture.whenStable();
 
+  if (deferBlockStates) {
+    await _renderDeferBlockStates(fixture, deferBlockStates);
+  }
+
   if (removeAngularAttributes) {
     _removeAngularAttrs(container);
   }
@@ -201,6 +218,8 @@ export async function render<T>(
     httpTesting,
     rerender,
     inject,
+    renderDeferBlock: (deferBlockState, deferBlockIndex) =>
+      _renderDeferBlockState(fixture, deferBlockState, deferBlockIndex),
     ...getElementLocatorSelectors(baseElement),
   };
 }
@@ -243,6 +262,8 @@ export async function renderDirective<T>(
     removeAngularAttributes,
     schema,
     withHttp,
+    deferBlockBehavior,
+    deferBlockStates,
   } = options;
 
   if (extraImports.includes(directiveClass)) {
@@ -283,6 +304,8 @@ export async function renderDirective<T>(
     withHttp,
     schema,
     removeAngularAttributes,
+    deferBlockBehavior,
+    deferBlockStates,
   });
 
   const [directiveNode] = hostFixture.debugElement.queryAllNodes(By.directive(directiveClass));
@@ -303,6 +326,8 @@ export async function renderDirective<T>(
     directiveInstance: directiveNode.injector.get(directiveClass) as T,
     inject,
     httpTesting,
+    renderDeferBlock: (deferBlockState, deferBlockIndex) =>
+      _renderDeferBlockState(hostFixture, deferBlockState, deferBlockIndex),
     debug: (el = container, maxLength?: number, opts?: PrettyDOMOptions) =>
       debug(el, maxLength, opts),
     ...getElementLocatorSelectors(baseElement),
@@ -392,10 +417,12 @@ async function _routedRenderResult<T>(
     baseElement,
     httpTesting,
     removeAngularAttributes,
+    deferBlockStates,
   }: {
     removeAngularAttributes?: boolean;
     baseElement: HTMLElement;
     httpTesting?: HttpTestingController;
+    deferBlockStates?: DeferBlockState | Array<DeferBlockStateConfig>;
   },
 ): Promise<RoutedRenderResult<T>> {
   const routerHarness = await RouterTestingHarness.create(routingConfig.initialRoute);
@@ -408,6 +435,10 @@ async function _routedRenderResult<T>(
 
   fixture.autoDetectChanges();
   await fixture.whenStable();
+
+  if (deferBlockStates) {
+    await _renderDeferBlockStates(fixture, deferBlockStates);
+  }
 
   if (removeAngularAttributes) {
     _removeAngularAttrs(container);
@@ -428,6 +459,8 @@ async function _routedRenderResult<T>(
     router,
     httpTesting,
     inject,
+    renderDeferBlock: (deferBlockState, deferBlockIndex) =>
+      _renderDeferBlockState(fixture, deferBlockState, deferBlockIndex),
     ...getElementLocatorSelectors(baseElement),
   };
 }
@@ -445,6 +478,55 @@ function _inject(injector: Injector | undefined): <T>(token: ProviderToken<T>) =
 
 function _removeAngularAttrs(element: HTMLElement) {
   element.removeAttribute('ng-version');
+}
+
+/**
+ * @internal
+ * Renders one (or all) `@defer` blocks of a fixture in the given state.
+ *
+ * With no `deferBlockIndex`, every defer block is rendered in the given state.
+ */
+async function _renderDeferBlockState<T>(
+  fixture: ComponentFixture<T>,
+  deferBlockState: DeferBlockState,
+  deferBlockIndex?: number,
+) {
+  const deferBlockFixtures = await fixture.getDeferBlocks();
+
+  if (deferBlockIndex !== undefined) {
+    if (deferBlockIndex < 0) {
+      throw new Error('[vitest-browser-angular] deferBlockIndex must be a positive number.');
+    }
+    const deferBlockFixture = deferBlockFixtures[deferBlockIndex];
+    if (!deferBlockFixture) {
+      throw new Error(
+        `[vitest-browser-angular] Could not find a deferrable block with index '${deferBlockIndex}'.`,
+      );
+    }
+    await deferBlockFixture.render(deferBlockState);
+    return;
+  }
+
+  for (const deferBlockFixture of deferBlockFixtures) {
+    await deferBlockFixture.render(deferBlockState);
+  }
+}
+
+/**
+ * @internal
+ * Applies the initial `deferBlockStates` option after render.
+ */
+async function _renderDeferBlockStates<T>(
+  fixture: ComponentFixture<T>,
+  deferBlockStates: DeferBlockState | Array<DeferBlockStateConfig>,
+) {
+  if (Array.isArray(deferBlockStates)) {
+    for (const { deferBlockState, deferBlockIndex } of deferBlockStates) {
+      await _renderDeferBlockState(fixture, deferBlockState, deferBlockIndex);
+    }
+  } else {
+    await _renderDeferBlockState(fixture, deferBlockStates);
+  }
 }
 
 function _overrideMetadata<T>(
