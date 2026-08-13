@@ -197,7 +197,7 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
    * @see https://angular.dev/api/core/NO_ERRORS_SCHEMA
    * @see https://angular.dev/api/core/CUSTOM_ELEMENTS_SCHEMA
    */
-  schema?: SchemaMetadata;
+  schema?: SchemaMetadata | Array<SchemaMetadata>;
 
   /**
    * When `true`, removes Angular-specific attributes (`ng-version`)

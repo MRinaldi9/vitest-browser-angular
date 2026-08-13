@@ -143,12 +143,13 @@ export async function render<T>(
 
     providers.push(provideHttpClient(...httpFeatures), provideHttpClientTesting());
   }
+  const schemas = Array.isArray(schema) ? schema : schema ? [schema] : undefined;
 
   TestBed.configureTestingModule({
     imports,
     providers,
     deferBlockBehavior,
-    ...(schema ? { schemas: [schema] } : {}),
+    schemas,
   });
 
   _overrideMetadata(componentClass, 'component', 'imports', overrideImportsComponent);
@@ -184,7 +185,7 @@ export async function render<T>(
         inputSignals[key].set(value);
       } else {
         throw new Error(
-          `[render] Cannot rerender component with input "${key}" because it was not provided in the initial render options.`,
+          `[vitest-browser-angular] Cannot rerender component with input "${key}" because it was not provided in the initial render options.`,
         );
       }
     }
@@ -478,6 +479,7 @@ function _inject(injector: Injector | undefined): <T>(token: ProviderToken<T>) =
 
 function _removeAngularAttrs(element: HTMLElement) {
   element.removeAttribute('ng-version');
+  element.removeAttribute('id');
 }
 
 /**
