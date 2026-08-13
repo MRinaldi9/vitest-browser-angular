@@ -1,5 +1,11 @@
 # @wismaz/vitest-browser-angular
 
+## 1.0.0
+
+### Major Changes
+
+- Integrated schema array and improved cleaning components for snapshot tests
+
 ## 0.14.0
 
 ### Minor Changes

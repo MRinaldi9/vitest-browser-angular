@@ -54,3 +54,7 @@
   dir: ""
   intents:
     - metal-ravens-argue
+"@wismaz/vitest-browser-angular@1.0.0":
+  dir: ""
+  intents:
+    - itchy-candles-attack
