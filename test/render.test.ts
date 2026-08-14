@@ -113,7 +113,7 @@ describe('rerender', () => {
     });
 
     await expect(rerender({ age: 25 })).rejects.toThrow(
-      '[render] Cannot rerender component with input "age"',
+      '[vitest-browser-angular] Cannot rerender component with input "age" because it was not provided in the initial render options.',
     );
   });
 
