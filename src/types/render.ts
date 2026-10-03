@@ -1,6 +1,9 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { HttpTestingController } from '@angular/common/http/testing';
 import type {
+  ChangeDetectorRef,
+  DebugElement,
+  ElementRef,
   EnvironmentProviders,
   InputSignalWithTransform,
   OutputEmitterRef,
@@ -14,6 +17,7 @@ import type { ComponentFixture, DeferBlockBehavior, DeferBlockState } from '@ang
 import type { Router, Routes } from '@angular/router';
 import type { RouterTestingHarness } from '@angular/router/testing';
 import type { Locator, LocatorSelectors, PrettyDOMOptions } from 'vitest/browser';
+
 import { Prettify } from './utils';
 
 /**
@@ -74,9 +78,7 @@ export interface HttpConfig {
   interceptors?: Array<HttpInterceptorFn>;
 }
 
-/**
- * Configures the initial state of a single `@defer` block by index.
- */
+/** Configures the initial state of a single `@defer` block by index. */
 export interface DeferBlockStateConfig {
   /** The state to render the defer block in. */
   deferBlockState: DeferBlockState;
@@ -90,19 +92,21 @@ type InputValueOrSignal<T> =
     : never;
 
 export type Inputs<CMP_TYPE extends Type<unknown>> = Partial<{
-  [PROP in keyof InstanceType<CMP_TYPE> as InstanceType<CMP_TYPE>[PROP] extends InputSignalWithTransform<
-    infer _ReadT,
-    infer _WriteT
-  >
-    ? PROP
-    : never]: InputValueOrSignal<InstanceType<CMP_TYPE>[PROP]>;
+  [
+    PROP in keyof InstanceType<CMP_TYPE> as InstanceType<CMP_TYPE>[PROP] extends InputSignalWithTransform<
+      infer _ReadT,
+      infer _WriteT
+    >
+      ? PROP
+      : never
+  ]: InputValueOrSignal<InstanceType<CMP_TYPE>[PROP]>;
 }> &
   Record<string, unknown>;
 
 export type OutputKeys<CMP_TYPE extends Type<unknown>> = {
-  [PROP in keyof InstanceType<CMP_TYPE>]: InstanceType<CMP_TYPE>[PROP] extends OutputEmitterRef<unknown>
-    ? PROP
-    : never;
+  [
+    PROP in keyof InstanceType<CMP_TYPE>
+  ]: InstanceType<CMP_TYPE>[PROP] extends OutputEmitterRef<unknown> ? PROP : never;
 }[keyof InstanceType<CMP_TYPE>];
 
 export type Outputs<CMP extends Type<unknown>> = Partial<{
@@ -114,14 +118,18 @@ export type Outputs<CMP extends Type<unknown>> = Partial<{
 
 /** Base options for rendering a component with `render()`. */
 export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> {
-  /** The base element to render into.
-   *  @default document.body
-   * */
+  /**
+   * The base element to render into.
+   *
+   * @default document.body
+   */
   baseElement?: HTMLElement;
 
   /**
-   * When `true`, automatically infers the component's selector and adds it to the template.
-   * Only works when `withRouting` is not enabled.
+   * When `true`, automatically infers the component's selector and adds it to the template. Only
+   * works when `withRouting` is not enabled.
+   *
+   * Usable only if Angular ^20.2.0
    */
   inferTagName?: boolean;
 
@@ -164,7 +172,8 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
    */
   withRouting?: RoutingConfig | boolean;
 
-  /** Enable Angular HttpClient testing support for the component. When enabled, `httpTesting` is
+  /**
+   * Enable Angular HttpClient testing support for the component. When enabled, `httpTesting` is
    * available in the render result.
    *
    * - When `true`: Enables HttpClient testing with default configuration.
@@ -192,17 +201,20 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
   /**
    * The schema metadata for the component.
    *
-   * In case the component uses custom elements or other non-standard Angular elements, you can provide the appropriate schema metadata here.
-   * @example CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA
+   * In case the component uses custom elements or other non-standard Angular elements, you can
+   * provide the appropriate schema metadata here.
+   *
+   * @example
+   *   (CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA);
+   *
    * @see https://angular.dev/api/core/NO_ERRORS_SCHEMA
    * @see https://angular.dev/api/core/CUSTOM_ELEMENTS_SCHEMA
    */
   schema?: SchemaMetadata | Array<SchemaMetadata>;
 
   /**
-   * When `true`, removes Angular-specific attributes (`ng-version`)
-   * from the rendered DOM after render. Useful for cleaner snapshots
-   * and inline assertions on `container.innerHTML`.
+   * When `true`, removes Angular-specific attributes (`ng-version`) from the rendered DOM after
+   * render. Useful for cleaner snapshots and inline assertions on `container.innerHTML`.
    *
    * @default false
    */
@@ -211,10 +223,9 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
   /**
    * Sets the behavior of `@defer` blocks in the rendered component.
    *
-   * Defaults to `DeferBlockBehavior.Manual`, which keeps defer blocks in a
-   * paused state so `renderDeferBlock`/`deferBlockStates` can control them
-   * deterministically. Set to `DeferBlockBehavior.Playthrough` to let blocks
-   * play through like they would in a real browser.
+   * Defaults to `DeferBlockBehavior.Manual`, which keeps defer blocks in a paused state so
+   * `renderDeferBlock`/`deferBlockStates` can control them deterministically. Set to
+   * `DeferBlockBehavior.Playthrough` to let blocks play through like they would in a real browser.
    *
    * @default DeferBlockBehavior.Manual
    * @see https://angular.dev/api/core/testing/DeferBlockBehavior
@@ -224,8 +235,8 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
   /**
    * Sets the initial state of the `@defer` blocks right after render.
    *
-   * Pass a single `DeferBlockState` to apply to every defer block, or an array
-   * of `{ deferBlockState, deferBlockIndex }` to target specific blocks.
+   * Pass a single `DeferBlockState` to apply to every defer block, or an array of `{
+   * deferBlockState, deferBlockIndex }` to target specific blocks.
    *
    * @example
    *   ```typescript
@@ -236,13 +247,13 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
    *   await render(MyComponent, {
    *     deferBlockStates: [{ deferBlockState: DeferBlockState.Loading, deferBlockIndex: 0 }],
    *   });
-   *   ```
+   *   ```;
    */
   deferBlockStates?: DeferBlockState | Array<DeferBlockStateConfig>;
 
   /**
-   * When provided, overrides the component's `imports` with the specified imports.
-   * Useful for mocking child components/directives/pipes used in the component's template.
+   * When provided, overrides the component's `imports` with the specified imports. Useful for
+   * mocking child components/directives/pipes used in the component's template.
    *
    * @example
    *   ```typescript
@@ -256,15 +267,13 @@ export interface BaseRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown
   overrideImportsComponent?: Array<{ replace: Type<unknown>; with: Type<unknown> }>;
 
   /**
-   * Replaces providers declared on the component itself with alternative providers.
-   * Useful for mocking a service that the component declares in its `providers` array.
+   * Replaces providers declared on the component itself with alternative providers. Useful for
+   * mocking a service that the component declares in its `providers` array.
    *
-   * `replace` must match the exact provider shape declared by the component:
-   * the same object shape (same `provide`/`useClass`/`useValue`/`useFactory` keys)
-   * or the bare class when the component uses the shorthand `providers: [Foo]`.
-   * `with` is a full provider that typically provides the same token as `replace`,
-   * e.g. `{ provide: Foo, useClass: MockFoo }`.
-   *
+   * `replace` must match the exact provider shape declared by the component: the same object shape
+   * (same `provide`/`useClass`/`useValue`/`useFactory` keys) or the bare class when the component
+   * uses the shorthand `providers: [Foo]`. `with` is a full provider that typically provides the
+   * same token as `replace`, e.g. `{ provide: Foo, useClass: MockFoo }`.
    *
    * @example
    *   ```typescript
@@ -306,8 +315,8 @@ export type RoutedRenderOptions<CMP_TYPE extends Type<unknown> = Type<unknown>> 
 >;
 
 /**
- * Fallback options for `render()` when the routing state cannot be statically determined
- * (e.g. `withRouting` is a generic `boolean`).
+ * Fallback options for `render()` when the routing state cannot be statically determined (e.g.
+ * `withRouting` is a generic `boolean`).
  *
  * `inputs` and `outputs` are not allowed because the component might be routed.
  */
@@ -319,9 +328,7 @@ export type RoutedFallbackRenderOptions<CMP_TYPE extends Type<unknown> = Type<un
   }
 >;
 
-/**
- * Base fields shared by every `render()` result, independent of whether routing is enabled.
- */
+/** Base fields shared by every `render()` result, independent of whether routing is enabled. */
 interface BaseRenderResult<T> extends LocatorSelectors {
   baseElement: HTMLElement;
   container: HTMLElement;
@@ -337,13 +344,12 @@ interface BaseRenderResult<T> extends LocatorSelectors {
   /** The instance of the rendered component's class. */
   componentClassInstance: T;
 
-  /**
-   * The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled.
-   */
+  /** The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled. */
   httpTesting?: HttpTestingController;
 
   /**
    * Injects a dependency based on the component injector.
+   *
    * @param token - The token to inject.
    * @returns The instance of the requested dependency.
    */
@@ -352,15 +358,15 @@ interface BaseRenderResult<T> extends LocatorSelectors {
   /**
    * Sets the state of one (or all) `@defer` blocks of the rendered component.
    *
-   * With no `deferBlockIndex`, every defer block is rendered in the given
-   * state. Pass an index to target a specific block.
+   * With no `deferBlockIndex`, every defer block is rendered in the given state. Pass an index to
+   * target a specific block.
    *
    * @example
    *   ```typescript
    *   const { renderDeferBlock } = await render(MyComponent);
    *   await renderDeferBlock(DeferBlockState.Complete);
    *   await renderDeferBlock(DeferBlockState.Loading, 0);
-   *   ```
+   *   ```;
    */
   renderDeferBlock: (deferBlockState: DeferBlockState, deferBlockIndex?: number) => Promise<void>;
 }
@@ -371,9 +377,7 @@ interface BaseRenderResult<T> extends LocatorSelectors {
  * The `fixture` is the `ComponentFixture<T>` of the rendered component.
  */
 export interface RenderResult<T> extends BaseRenderResult<T> {
-  /**
-   * The ComponentFixture for the rendered component.
-   */
+  /** The ComponentFixture for the rendered component. */
   fixture: ComponentFixture<T>;
 
   /**
@@ -392,9 +396,7 @@ export interface RenderResult<T> extends BaseRenderResult<T> {
  * `ComponentFixture<unknown>`), and `router` / `routerHarness` are always defined.
  */
 export interface RoutedRenderResult<T> extends BaseRenderResult<T> {
-  /**
-   * The RouterTestingHarness's internal fixture. Not a fixture of `T` directly.
-   */
+  /** The RouterTestingHarness's internal fixture. Not a fixture of `T` directly. */
   fixture: ComponentFixture<unknown>;
 
   /**
@@ -437,6 +439,12 @@ export interface RenderFn {
   ): Promise<RenderResult<T> | RoutedRenderResult<T>>;
 }
 
+/**
+ * Options for `renderDirective()` when the directive is rendered inside a `template`.
+ *
+ * The directive is applied to the template through a generated host component, so structural
+ * directives and projected content are supported.
+ */
 export type DirectiveRenderOptions = Prettify<
   Omit<
     BaseRenderOptions,
@@ -471,24 +479,133 @@ export type DirectiveRenderOptions = Prettify<
   }
 >;
 
+/**
+ * Options for `renderDirective()` when the directive is applied directly to a bare host element (no
+ * `template`).
+ *
+ * This mode maps to Angular's `TestBed.createDirective()` (available since Angular 22.2) and falls
+ * back to an equivalent implementation on older versions, with the same result surface.
+ *
+ * Because the directive is applied to an empty host element, `template`, `hostProps`,
+ * `changeDetection`, `schema` and `deferBlockStates` are not available here: use the template mode
+ * for structural directives or projected content.
+ *
+ * @example
+ *   ```typescript
+ *   const { directiveInstance, fixture } = await renderDirective(HighlightDirective, {
+ *     tagName: 'button',
+ *     inputs: { color: 'red' },
+ *     outputs: { blurred: vi.fn() },
+ *   });
+ *   ```;
+ */
+export type DirectiveHostRenderOptions<DIR_TYPE extends Type<unknown> = Type<unknown>> = Prettify<
+  Omit<
+    BaseRenderOptions<DIR_TYPE>,
+    | 'withRouting'
+    | 'inferTagName'
+    | 'imports'
+    | 'schema'
+    | 'deferBlockStates'
+    | 'overrideImportsComponent'
+    | 'overrideProvidersComponent'
+  > & {
+    /** Not available in this mode: use the template mode to render content. */
+    template?: never;
+
+    /**
+     * Tag name of the host element the directive is applied to.
+     *
+     * Inferred from the directive selector when omitted. Directives with an attribute-only selector
+     * (e.g. `[appHighlight]`) require an explicit `tagName`, e.g. `'div'`.
+     */
+    tagName?: string;
+
+    /** When provided, overrides the directive `imports` with the specified imports. */
+    overrideImportsDirective?: Array<{ replace: Type<unknown>; with: Type<unknown> }>;
+
+    /** Replaces providers declared on the directive itself with alternative providers. */
+    overrideProvidersDirective?: Array<{
+      replace: Provider;
+      with: Provider;
+    }>;
+  }
+>;
+
+/** Version-independent shape of the fixture returned by `renderDirective()`. */
+export interface DirectiveFixtureLike<T> {
+  /** The instance of the directive class. */
+  readonly directiveInstance: T;
+
+  /** The native element the directive is applied to. */
+  readonly nativeElement: Element;
+
+  /** The DebugElement of the host element. */
+  readonly debugElement: DebugElement;
+
+  /** The ElementRef of the host element. */
+  readonly elementRef: ElementRef;
+
+  /** The ChangeDetectorRef of the host view. */
+  readonly changeDetectorRef: ChangeDetectorRef;
+
+  /** Triggers a change detection cycle. */
+  detectChanges(checkNoChanges?: boolean): void;
+
+  /** Runs a change detection cycle verifying that nothing changed. */
+  checkNoChanges(): void;
+
+  /** Enables automatically synchronizing the view, as it would in an application. */
+  autoDetectChanges(autoDetect?: boolean): void;
+
+  /** Whether the fixture is currently stable. */
+  isStable(): boolean;
+
+  /** Resolves once the fixture is stable. */
+  whenStable(): Promise<unknown>;
+
+  /** Resolves once the ui state is stable following animations. */
+  whenRenderingDone(): Promise<unknown>;
+
+  /** Triggers the fixture destruction. */
+  destroy(): void;
+
+  /** Registers a callback invoked when the fixture is destroyed. */
+  onDestroy(callback: () => void): void;
+}
+
 export interface DirectiveRenderResult<T> extends LocatorSelectors {
   container: HTMLElement;
   baseElement: HTMLElement;
+
+  /**
+   * The fixture of the rendered directive.
+   *
+   * With a `template` this wraps the generated host component's fixture; without a `template` it is
+   * Angular's `DirectiveFixture` (or its equivalent on older versions).
+   */
+  fixture: DirectiveFixtureLike<T>;
+
   /**
    * The host component's fixture.
+   *
+   * @deprecated use `fixture` instead — it exposes the same surface in both modes.
    */
-  hostFixture: ComponentFixture<unknown>;
+  hostFixture: DirectiveFixtureLike<T>;
+
   /**
-   * Instance of the tested directive.
+   * The element the directive is applied to.
+   *
+   * With a `template` this is the element matching the directive selector; without a `template` it
+   * is the same element as `container`.
    */
+  hostElement: HTMLElement;
+
+  /** Instance of the tested directive. */
   directiveInstance: T;
-  /**
-   * Locator scoped to the host element where the directive is applied.
-   */
+  /** Locator scoped to the host element where the directive is applied. */
   locator: Locator;
-  /**
-   * Debug function for the directive's element.
-   */
+  /** Debug function for the directive's element. */
   debug(
     el?: HTMLElement | HTMLElement[] | Locator | Locator[],
     maxLength?: number,
@@ -497,21 +614,30 @@ export interface DirectiveRenderResult<T> extends LocatorSelectors {
 
   /**
    * Injects a dependency based on the directive's injector.
+   *
    * @param token - The token to inject.
    * @returns The instance of the requested dependency.
    */
   inject: <T>(token: ProviderToken<T>) => T;
 
-  /**
-   * The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled.
-   */
+  /** The Angular TestBed's HttpTestingController instance, if `withHttp` was enabled. */
   httpTesting?: HttpTestingController;
+
+  /**
+   * Rerenders the directive with new input values.
+   *
+   * Only available when the directive is rendered without a `template`: pass the inputs through
+   * `inputs` on the initial render, then update them here.
+   */
+  rerender: (newInputs: Inputs<Type<T>>) => Promise<void>;
 
   /**
    * Sets the state of one (or all) `@defer` blocks of the host component.
    *
-   * With no `deferBlockIndex`, every defer block is rendered in the given
-   * state. Pass an index to target a specific block.
+   * With no `deferBlockIndex`, every defer block is rendered in the given state. Pass an index to
+   * target a specific block.
+   *
+   * Only available when the directive is rendered with a `template`.
    */
   renderDeferBlock: (deferBlockState: DeferBlockState, deferBlockIndex?: number) => Promise<void>;
 }

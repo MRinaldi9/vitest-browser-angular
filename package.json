@@ -30,7 +30,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsc --noEmit -p tsconfig.app.json && tsdown",
     "dev": "tsdown --sourcemap",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
@@ -41,7 +41,8 @@
     "_test": "pnpm build && vitest",
     "test:types": "pnpm _test --run --project types",
     "test:zone": "pnpm _test --run --project zone",
-    "test:zoneless": "pnpm _test --run --project zoneless"
+    "test:zoneless": "pnpm _test --run --project zoneless",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.test.json"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "2.7.5",

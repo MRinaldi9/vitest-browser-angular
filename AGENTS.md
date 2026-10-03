@@ -13,7 +13,7 @@ Package manager is **pnpm** (>=11). Node 24.x in CI.
 - `pnpm _test` — hub: runs `pnpm build` then Vitest in **watch mode** (`watch: true` in `vitest.config.ts`). For a one-shot run: `pnpm _test --run`.
 - `pnpm test:zoneless` / `pnpm test:zone` / `pnpm test:types` — one-shot per Vitest project (`pnpm _test --run --project <name>`); each builds first too.
 - `pnpm _test --run <file>` — single file. `pnpm _test --run -t "name"` — single test by name.
-- `pnpm build` — tsdown to `dist/` (ESM + dts + publint). Tests import from `dist/`, so you need `dist/` present. The `_test` hub builds first; only run `pnpm build` manually when running vitest directly (e.g. `pnpm vitest run` skips the build).
+- `pnpm build` — `tsc --noEmit` on `src` (strict type gate, fails the build on any type error) then tsdown to `dist/` (ESM + dts + publint). `pnpm typecheck` runs both `src` and `test` configs without emitting. Tests import from `dist/`, so you need `dist/` present. The `_test` hub builds first; only run `pnpm build` manually when running vitest directly (e.g. `pnpm vitest run` skips the build).
 - `pnpm lint` / `pnpm lint:fix` — oxlint. `pnpm fmt` / `pnpm fmt:check` — oxfmt.
 - `pnpm test:types` — the type-level suite (Vitest typecheck on `test/**/*.test-d.ts`); `pnpm exec tsc --noEmit -p tsconfig.test.json` covers it equivalently.
 - **There is no `test` script** — `_test` + `test:*` replaced it, but `.github/actions/setup-and-test/action.yml` still runs `pnpm test`; reconcile before the next CI run.
@@ -33,6 +33,7 @@ CI order: **lint → test** (the test run also covers type checking via the `typ
   - So a file named `foo.test.ts` runs under `zone`; name it `zoneless.test.ts` to run zoneless; a `*.test-d.ts` file runs only in the typechecker.
 - `teardown.destroyAfterEach` is `false` in both setups; cleanup runs via the `vitest:component-cleanup` hook registered in `src/index.ts`.
 - **Type-level tests** live in `test/types/*.test-d.ts`, split per feature (mirroring the runtime files: `render`, `routed`, `render-directive`, `override-providers`, `defer`) using `expectTypeOf` + `@ts-expect-error`, with the shared fixture in `test/components/type-fixture.component.ts`. The `*.test-d.ts` name keeps them out of the runtime browser runs (they never execute); they are checked by the `types` Vitest project (`test:types`, also run by the default `_test`) and by the Angular plugin's `tsconfig.test.json`. Tests are real `test()`/`describe()` lists. Note: `@ts-expect-error` requires the errored statement on a single line (oxfmt wraps long object literals, breaking adjacency); and a `boolean`-typed const initialized with a literal gets flow-narrowed inside arrow callbacks, so declare it as `true as boolean` when overload discrimination matters.
+- **Asserting signal-driven updates**: after a `signal.set()`, always await something — change detection is async in both `zone` and `zoneless` projects, so a sync `expect` right after reads the stale DOM (verified: it fails in both). Prefer the polling assertion (`await expect.element(el).toHaveClass(...)`) over `await fixture.whenStable()` + sync `expect`: the poller retries by itself, so `whenStable` is redundant there. No runtime test should need `whenStable` anymore (it survives only as a type-level `expectTypeOf` in `render-directive.test-d.ts`).
 
 ## Code style & hooks
 
@@ -43,9 +44,14 @@ CI order: **lint → test** (the test run also covers type checking via the `typ
 ## Architecture
 
 - `src/index.ts` — default entry (`.`). Extends Vitest's `page` with `render`/`renderDirective` and registers auto-cleanup `beforeEach`. Use this in tests.
-- `src/pure.ts` — `/pure` entry. Just `render`, `renderDirective`, `cleanup`; no `page` extension, no auto-cleanup.
+- `src/pure.ts` — `/pure` entry. Just `render`, `renderDirective`, `cleanup`; no `page` extension, no auto-cleanup. Both entries are the **only** build entries (`tsdown.config.ts`), the other top-level modules are internal.
+- `src/render.ts`, `src/render-directive.ts`, `src/cleanup.ts` — the implementations behind the entries.
+- `src/directive-fixture.ts` — `createDirectiveFixture()`: delegates to Angular's `TestBed.createDirective()` (22.2+) when available, otherwise emulates it with the public `createComponent()` API, so `renderDirective()` returns the same `DirectiveFixtureLike` surface on every supported version. `ɵsetCreateDirectiveMode('emulated')` forces the fallback — tests run the whole host-mode suite through both paths.
+- `src/utils/` — internals shared by `render()`/`renderDirective()`: `bindings` (createBindings/attachModelWriteBack/createRerender), `defer`, `dom`, `http`, `inject`, `metadata`, `signals`, `testbed` (shared `configureTestingModule` + `compileComponents` + `httpTesting` lookup).
 - `src/types/render.ts` — all public types.
+- `src/errors/vitest-browser-angular.ts` — `VitestBrowserAngularError` (`name: 'VBAError'`): **every** `throw` in `src/` must use it, never `new Error(...)`. The class adds the `[vitest-browser-angular] ` prefix, so messages must not repeat it.
 - `render()` is routing-aware: `withRouting: true | RoutingConfig` returns `RoutedRenderResult` (adds `router` + `routerHarness`). With routing on, `inputs`/`outputs` are ignored — pass data via route `data`/params instead.
+- `renderDirective()` has two modes selected by `template`: template mode (generated host component, supports structural directives/`hostProps`) and host mode (bare host element, supports `tagName`/`inputs`/`outputs`/`rerender`). `renderDeferBlock()` only works in template mode, `rerender()` only in host mode — both throw a descriptive error otherwise. `hostFixture` is a deprecated alias of `fixture`.
 
 ## Release (provisional — changeset is being removed)
 
