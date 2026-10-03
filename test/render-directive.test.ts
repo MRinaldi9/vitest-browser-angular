@@ -1,13 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
-import { userEvent } from 'vitest/browser';
 import { renderDirective } from '@wismaz/vitest-browser-angular';
+import { userEvent } from 'vitest/browser';
+
 import { ChangeClass } from './directives/change-class';
 import { Unless, UnlessLocalService } from './directives/unless';
 
 test('renders directive', async () => {
   const className = signal('test');
-  const { getByText, hostFixture } = await renderDirective(ChangeClass, {
+  const { getByText } = await renderDirective(ChangeClass, {
     template: `<button test [className]="test()" (blurred)="onBlur($event)">Test</button>`,
     hostProps: {
       test: className,
@@ -16,7 +17,6 @@ test('renders directive', async () => {
   expect(getByText('Test')).toHaveClass('test');
 
   className.set('changed');
-  await hostFixture.whenStable();
   await expect.element(getByText('Test')).toHaveClass('changed');
 });
 
@@ -41,7 +41,8 @@ test('throws when the directive is also listed in imports', async () => {
       imports: [ChangeClass],
     }),
   ).rejects.toThrow(
-    `[renderDirective] The directive ChangeClass is already passed as the first argument and is added ` +
+    `[vitest-browser-angular] The directive ChangeClass is already passed as the first argument ` +
+      `and is added ` +
       `to the test module's \`imports\` automatically. Remove it from \`options.imports\` to avoid a duplicate import.`,
   );
 });
@@ -140,7 +141,7 @@ describe('passthrough options', () => {
 describe('structural directives', () => {
   test('finds the directive on its ng-template anchor and toggles its view', async () => {
     const show = signal(false);
-    const { directiveInstance, inject, container, hostFixture } = await renderDirective(Unless, {
+    const { directiveInstance, inject, container } = await renderDirective(Unless, {
       template: `<div *appUnless="show()">Hidden content</div>`,
       hostProps: { show },
     });
@@ -150,12 +151,10 @@ describe('structural directives', () => {
     expect(container.textContent).toContain('Hidden content');
 
     show.set(true);
-    await hostFixture.whenStable();
-    expect(container.textContent).not.toContain('Hidden content');
+    await expect.element(container).not.toHaveTextContent('Hidden content');
 
     show.set(false);
-    await hostFixture.whenStable();
-    expect(container.textContent).toContain('Hidden content');
+    await expect.element(container).toHaveTextContent('Hidden content');
 
     expect(inject(Unless)).toBeInstanceOf(Unless);
   });

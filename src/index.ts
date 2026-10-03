@@ -1,6 +1,9 @@
 import { beforeEach } from 'vitest';
 import { page } from 'vitest/browser';
-import { cleanup, render, renderDirective } from './pure';
+
+import { cleanup } from './cleanup';
+import { render } from './render';
+import { renderDirective } from './render-directive';
 
 page.extend({
   render,
@@ -29,7 +32,12 @@ export type {
   RenderFn,
   RenderResult,
   RoutedRenderResult,
+  DirectiveFixtureLike,
+  DirectiveHostRenderOptions,
   DirectiveRenderOptions,
   DirectiveRenderResult,
 } from './types/render';
+export { VitestBrowserAngularError } from './errors/vitest-browser-angular';
+export { setCreateDirectiveMode as ɵsetCreateDirectiveMode } from './directive-fixture';
+export type { CreateDirectiveMode } from './directive-fixture';
 export { cleanup, render, renderDirective };

@@ -1,6 +1,9 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { HttpTestingController } from '@angular/common/http/testing';
 import type {
+  ChangeDetectorRef,
+  DebugElement,
+  ElementRef,
   EnvironmentProviders,
   InputSignalWithTransform,
   OutputEmitterRef,
@@ -436,6 +439,12 @@ export interface RenderFn {
   ): Promise<RenderResult<T> | RoutedRenderResult<T>>;
 }
 
+/**
+ * Options for `renderDirective()` when the directive is rendered inside a `template`.
+ *
+ * The directive is applied to the template through a generated host component, so structural
+ * directives and projected content are supported.
+ */
 export type DirectiveRenderOptions = Prettify<
   Omit<
     BaseRenderOptions,
@@ -470,11 +479,128 @@ export type DirectiveRenderOptions = Prettify<
   }
 >;
 
+/**
+ * Options for `renderDirective()` when the directive is applied directly to a bare host element (no
+ * `template`).
+ *
+ * This mode maps to Angular's `TestBed.createDirective()` (available since Angular 22.2) and falls
+ * back to an equivalent implementation on older versions, with the same result surface.
+ *
+ * Because the directive is applied to an empty host element, `template`, `hostProps`,
+ * `changeDetection`, `schema` and `deferBlockStates` are not available here: use the template mode
+ * for structural directives or projected content.
+ *
+ * @example
+ *   ```typescript
+ *   const { directiveInstance, fixture } = await renderDirective(HighlightDirective, {
+ *     tagName: 'button',
+ *     inputs: { color: 'red' },
+ *     outputs: { blurred: vi.fn() },
+ *   });
+ *   ```;
+ */
+export type DirectiveHostRenderOptions<DIR_TYPE extends Type<unknown> = Type<unknown>> = Prettify<
+  Omit<
+    BaseRenderOptions<DIR_TYPE>,
+    | 'withRouting'
+    | 'inferTagName'
+    | 'imports'
+    | 'schema'
+    | 'deferBlockStates'
+    | 'overrideImportsComponent'
+    | 'overrideProvidersComponent'
+  > & {
+    /** Not available in this mode: use the template mode to render content. */
+    template?: never;
+
+    /**
+     * Tag name of the host element the directive is applied to.
+     *
+     * Inferred from the directive selector when omitted. Directives with an attribute-only selector
+     * (e.g. `[appHighlight]`) require an explicit `tagName`, e.g. `'div'`.
+     */
+    tagName?: string;
+
+    /** When provided, overrides the directive `imports` with the specified imports. */
+    overrideImportsDirective?: Array<{ replace: Type<unknown>; with: Type<unknown> }>;
+
+    /** Replaces providers declared on the directive itself with alternative providers. */
+    overrideProvidersDirective?: Array<{
+      replace: Provider;
+      with: Provider;
+    }>;
+  }
+>;
+
+/** Version-independent shape of the fixture returned by `renderDirective()`. */
+export interface DirectiveFixtureLike<T> {
+  /** The instance of the directive class. */
+  readonly directiveInstance: T;
+
+  /** The native element the directive is applied to. */
+  readonly nativeElement: Element;
+
+  /** The DebugElement of the host element. */
+  readonly debugElement: DebugElement;
+
+  /** The ElementRef of the host element. */
+  readonly elementRef: ElementRef;
+
+  /** The ChangeDetectorRef of the host view. */
+  readonly changeDetectorRef: ChangeDetectorRef;
+
+  /** Triggers a change detection cycle. */
+  detectChanges(checkNoChanges?: boolean): void;
+
+  /** Runs a change detection cycle verifying that nothing changed. */
+  checkNoChanges(): void;
+
+  /** Enables automatically synchronizing the view, as it would in an application. */
+  autoDetectChanges(autoDetect?: boolean): void;
+
+  /** Whether the fixture is currently stable. */
+  isStable(): boolean;
+
+  /** Resolves once the fixture is stable. */
+  whenStable(): Promise<unknown>;
+
+  /** Resolves once the ui state is stable following animations. */
+  whenRenderingDone(): Promise<unknown>;
+
+  /** Triggers the fixture destruction. */
+  destroy(): void;
+
+  /** Registers a callback invoked when the fixture is destroyed. */
+  onDestroy(callback: () => void): void;
+}
+
 export interface DirectiveRenderResult<T> extends LocatorSelectors {
   container: HTMLElement;
   baseElement: HTMLElement;
-  /** The host component's fixture. */
-  hostFixture: ComponentFixture<unknown>;
+
+  /**
+   * The fixture of the rendered directive.
+   *
+   * With a `template` this wraps the generated host component's fixture; without a `template` it is
+   * Angular's `DirectiveFixture` (or its equivalent on older versions).
+   */
+  fixture: DirectiveFixtureLike<T>;
+
+  /**
+   * The host component's fixture.
+   *
+   * @deprecated use `fixture` instead — it exposes the same surface in both modes.
+   */
+  hostFixture: DirectiveFixtureLike<T>;
+
+  /**
+   * The element the directive is applied to.
+   *
+   * With a `template` this is the element matching the directive selector; without a `template` it
+   * is the same element as `container`.
+   */
+  hostElement: HTMLElement;
+
   /** Instance of the tested directive. */
   directiveInstance: T;
   /** Locator scoped to the host element where the directive is applied. */
@@ -498,10 +624,20 @@ export interface DirectiveRenderResult<T> extends LocatorSelectors {
   httpTesting?: HttpTestingController;
 
   /**
+   * Rerenders the directive with new input values.
+   *
+   * Only available when the directive is rendered without a `template`: pass the inputs through
+   * `inputs` on the initial render, then update them here.
+   */
+  rerender: (newInputs: Inputs<Type<T>>) => Promise<void>;
+
+  /**
    * Sets the state of one (or all) `@defer` blocks of the host component.
    *
    * With no `deferBlockIndex`, every defer block is rendered in the given state. Pass an index to
    * target a specific block.
+   *
+   * Only available when the directive is rendered with a `template`.
    */
   renderDeferBlock: (deferBlockState: DeferBlockState, deferBlockIndex?: number) => Promise<void>;
 }

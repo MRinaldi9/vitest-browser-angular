@@ -776,7 +776,7 @@ test('plays through interaction triggers', async () => {
 });
 ```
 
-`renderDeferBlock` and `deferBlockStates` work in both modes. `renderDeferBlock` is available on every render result: `render()`, routed `render()` (with `withRouting`), and `renderDirective()`.
+`renderDeferBlock` and `deferBlockStates` work in both modes. `renderDeferBlock` is available on every render result: `render()`, routed `render()` (with `withRouting`), and `renderDirective()` (template mode only — a directive rendered on a bare host element has no template to defer).
 
 ## Component Providers
 
@@ -809,7 +809,18 @@ For overriding a `providedIn: 'root'` service (provided at root/test level, wher
 
 ## Directives
 
-Use `renderDirective` to test both **attribute** and **structural** directives. It wraps the directive in a generated host component and renders the provided `template`, so you can drive the directive with real DOM events and assert against the host element.
+Use `renderDirective` to test both **attribute** and **structural** directives. It has two modes, selected by the presence of a `template`:
+
+| Mode | When | How the directive is applied |
+| --- | --- | --- |
+| **Template** (default) | You need content, projected nodes or a **structural** directive | Inside a generated host component that renders your `template` |
+| **Host** (no `template`) | You only need the directive on an element, with `inputs`/`outputs` | Directly on a bare host element (`TestBed.createDirective()` on Angular 22.2+, emulated on older versions) |
+
+Both modes return the **same result shape**, so switching between them never changes your assertions.
+
+### Template mode
+
+It wraps the directive in a generated host component and renders the provided `template`, so you can drive the directive with real DOM events and assert against the host element.
 
 ```ts
 import { Directive, input, output } from '@angular/core';
@@ -837,7 +848,7 @@ test('renders directive', async () => {
 
 The `template` **must** include the directive selector otherwise an error will be thrown.
 
-### Host Props
+#### Host Props
 
 Pass reactive values and handlers to the template through `hostProps`. Each property is assigned onto the host component instance, so you can reference it directly in the template binding:
 
@@ -862,7 +873,7 @@ test('binds host inputs and outputs', async () => {
 
 Signals passed via `hostProps` keep the binding reactive — updating them propagates to the directive once change detection runs.
 
-### Imports and Providers
+#### Imports and Providers
 
 Pass additional modules (pipes, directives, components used in the template) via `imports`, and register DI providers via `providers`:
 
@@ -876,7 +887,7 @@ const { getByText } = await renderDirective(HighlightDirective, {
 });
 ```
 
-### Structural directives
+#### Structural directives
 
 Structural directives work out of the box: `renderDirective` finds the directive on its `<ng-template>` anchor even though it never appears as a real element in the DOM.
 
@@ -898,7 +909,7 @@ export class UnlessDirective {
 
 test('renders a structural directive', async () => {
   const show = signal(false);
-  const { directiveInstance, container, hostFixture } = await renderDirective(UnlessDirective, {
+  const { container, fixture } = await renderDirective(UnlessDirective, {
     template: `<div *appUnless="show()">Hidden content</div>`,
     hostProps: { show },
   });
@@ -906,24 +917,57 @@ test('renders a structural directive', async () => {
   expect(container.textContent).toContain('Hidden content');
 
   show.set(true);
-  await hostFixture.whenStable();
+  await fixture.whenStable();
   expect(container.textContent).not.toContain('Hidden content');
 });
 ```
 
+### Host mode
+
+Without a `template`, the directive is applied directly to an empty host element and driven by `inputs`/`outputs` — the counterpart of Angular's [`TestBed.createDirective()`](https://angular.dev/api/core/testing/TestBed/createDirective).
+
+```ts
+import { signal } from '@angular/core';
+
+test('binds inputs and outputs on a bare host element', async () => {
+  const onBlur = vi.fn();
+  const { directiveInstance, hostElement, rerender } = await renderDirective(HighlightDirective, {
+    tagName: 'button',
+    inputs: { color: 'red' },
+    outputs: { blurred: onBlur },
+  });
+
+  expect(directiveInstance.color()).toBe('red');
+  expect(hostElement).toHaveStyle({ color: 'rgb(255, 0, 0)' });
+
+  await rerender({ color: 'blue' });
+  expect(hostElement).toHaveStyle({ color: 'rgb(0, 0, 255)' });
+});
+```
+
+- `tagName` — tag name of the host element. Inferred from the directive selector when the selector declares an element (`selector: 'app-highlight'`); directives with an attribute-only selector (`selector: '[appHighlight]'`) require an explicit value, e.g. `'div'`. This mirrors Angular's own inference, including its error messages.
+- `inputs` / `outputs` — bound to the directive instance through `inputBinding()` / `outputBinding()`, exactly like `render()`. Signals passed to `inputs` stay reactive, and `rerender()` updates the values passed at render time.
+- The host element is empty: `template`, `hostProps`, `changeDetection`, `schema`, `deferBlockStates`, `imports` and `renderDeferBlock()` are **template-mode only**. Structural directives that inject `TemplateRef` need the template mode.
+- Works with any supported Angular version: on 22.2+ it delegates to `TestBed.createDirective()`, on older versions an equivalent implementation runs (built on the public `createComponent()` API), with the same result shape. One difference: applying a **non-standalone** directive to a bare host requires Angular 22.2+.
+
 ### Render options
 
-`renderDirective` forwards the same render options as `render` (except routing, `inputs`, `outputs` and `inferTagName`):
+`renderDirective` forwards the same render options as `render` (except routing and `inferTagName`):
 
 - `overrideImportsDirective` / `overrideProvidersDirective` — override the tested directive's `imports`/`providers` metadata to mock its dependencies.
+
+Options that only make sense with a generated host component (`template`, `hostProps`, `imports`, `changeDetection`, `schema`, `deferBlockStates`) are rejected by the type checker in host mode, and `inputs` / `outputs` are rejected in template mode.
 
 ### Result
 
 The render result mirrors `render` and adds directive-specific helpers:
 
 - `directiveInstance` — the instance of the tested directive, resolved from the host element's injector.
+- `fixture` — the fixture of the rendered directive: Angular's `DirectiveFixture` in host mode, the host component's fixture in template mode. Both expose `directiveInstance`, `nativeElement`, `detectChanges()`, `autoDetectChanges()`, `whenStable()` and `destroy()`.
+- `hostElement` — the element the directive is applied to (the same element as `container` in host mode).
 - `locator` — Vitest browser locator scoped to the host component's container.
-- `fixture` — the host component's `ComponentFixture`.
+- `rerender` — updates the inputs passed at render time (host mode only).
+- `renderDeferBlock` — drives `@defer` blocks of the template (template mode only).
 - `container` / `baseElement` — the rendered elements.
 - `debug` — pretty-print the DOM for debugging.
 - `inject` — resolve dependencies from the **directive's** injector (also works for providers declared on the directive itself).
