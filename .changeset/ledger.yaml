@@ -58,3 +58,8 @@
   dir: ""
   intents:
     - itchy-candles-attack
+"@wismaz/vitest-browser-angular@2.0.0":
+  dir: ""
+  intents:
+    - little-worms-joke
+    - wicked-tools-compete

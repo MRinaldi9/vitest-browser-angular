@@ -1,5 +1,15 @@
 # @wismaz/vitest-browser-angular
 
+## 2.0.0
+
+### Major Changes
+
+- new implementation renderDirective
+
+### Minor Changes
+
+- Correct implementation change detection through version, added comments for property not available
+
 ## 1.0.0
 
 ### Major Changes
