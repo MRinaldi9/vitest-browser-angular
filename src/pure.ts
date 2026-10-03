@@ -18,17 +18,18 @@ import {
   signal,
 } from '@angular/core';
 import {
-  ɵgetCleanupHook as getCleanupHook,
-  TestBed,
   type ComponentFixture,
   DeferBlockBehavior,
   DeferBlockState,
+  ɵgetCleanupHook as getCleanupHook,
+  TestBed,
 } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { assert } from 'vitest';
 import { page, PrettyDOMOptions, server, utils } from 'vitest/browser';
+
 import {
   BaseRenderOptions,
   ComponentRenderOptions,
@@ -44,6 +45,7 @@ import {
   RoutedRenderResult,
   RoutingConfig,
 } from './types/render';
+import { EAGER_CHANGE_DETECTION } from './utils/change-detection';
 import { isModelSignal, isWSignal } from './utils/signals';
 
 const { debug, getElementLocatorSelectors } = utils;
@@ -52,7 +54,7 @@ const { debug, getElementLocatorSelectors } = utils;
  * Renders an Angular component for testing with Vitest Browser Mode.
  *
  * @example
- * ```typescript
+ *   ```typescript
  *   // Basic render
  *   const { locator } = await render(MyComponent);
  *   await expect.element(locator.getByText('Hello')).toBeVisible();
@@ -69,7 +71,8 @@ const { debug, getElementLocatorSelectors } = utils;
  *       initialRoute: '/profile',
  *     },
  *   });
- *```
+ *   ```;
+ *
  * @param componentClass - The component class to render
  * @param options - Configuration options for rendering
  * @returns A promise that resolves to the render result with locators and component access
@@ -228,24 +231,24 @@ export async function render<T>(
 /**
  * Renders a directive for testing with Vitest Browser Mode.
  *
- * @param directiveClass - The directive class to test
- * @param options - Configuration including the template where the directive is applied
- * @returns A render result with fixture, directive instance, and query methods
- *
  * @example
- * ```typescript
- * // Basic directive test
- * const { directiveInstance, locator } = await renderDirective(HighlightDirective, {
+ *   ```typescript
+ *   // Basic directive test
+ *   const { directiveInstance, locator } = await renderDirective(HighlightDirective, {
  *   template: `<div appHighlight>Test</div>`,
- * });
+ *   });
  *
- * // With host input binding
- * const { locator } = await renderDirective(HighlightDirective, {
+ *   // With host input binding
+ *   const { locator } = await renderDirective(HighlightDirective, {
  *   template: `<div [appHighlight]="color" (blurred)="onClick($event)">Test</div>`,
  *   hostProps: { color: 'red', onClick: vi.fn() },
  *   imports: [JsonPipe], // extra imports for template
- * });
- * ```
+ *   });
+ *   ```
+ *
+ * @param directiveClass - The directive class to test
+ * @param options - Configuration including the template where the directive is applied
+ * @returns A render result with fixture, directive instance, and query methods
  */
 export async function renderDirective<T>(
   directiveClass: Type<T>,
@@ -277,13 +280,14 @@ export async function renderDirective<T>(
   _overrideMetadata(directiveClass, 'directive', 'providers', overrideProvidersDirective);
 
   const imports = [directiveClass, ...extraImports];
+  const eagerChangeDetection = EAGER_CHANGE_DETECTION;
 
   @Component({
     selector: 'test-host',
     imports,
     template,
     changeDetection:
-      changeDetection === 'eager' ? ChangeDetectionStrategy.Eager : ChangeDetectionStrategy.OnPush,
+      changeDetection === 'eager' ? eagerChangeDetection : ChangeDetectionStrategy.OnPush,
   })
   class TestHostComponent {
     constructor() {
@@ -355,15 +359,14 @@ function _ensureTestIdAttribute(element: HTMLElement) {
 }
 
 /**
+ * @param inputsBinding Signal input values keyed by component property
+ * @param outputsBinding Output handler functions keyed by component property
+ * @returns Flat binding array for `TestBed.createComponent({ bindings })`
  * @internal
  * Builds binding configs for `TestBed.createComponent()` from the render options.
  *
  * Map entries through `inputBinding()` / `outputBinding()` — signal values are
  * passed as-is, plain values are wrapped in a factory. Used when routing is off.
- *
- * @param inputsBinding Signal input values keyed by component property
- * @param outputsBinding Output handler functions keyed by component property
- * @returns Flat binding array for `TestBed.createComponent({ bindings })`
  */
 function _createBindingsComponent<C extends Type<unknown>>(
   inputsBinding: Inputs<C> = {},
@@ -467,10 +470,10 @@ async function _routedRenderResult<T>(
 }
 
 /**
- * @internal
- * Closure that returns an `inject` function for the given injector. Throws if the injector is undefined.
  * @param injector - The Angular injector to use for dependency resolution.
  * @returns A function that takes a token and returns the corresponding instance from the injector.
+ * @internal
+ * Closure that returns an `inject` function for the given injector. Throws if the injector is undefined.
  */
 function _inject(injector: Injector | undefined): <T>(token: ProviderToken<T>) => T {
   assert(injector, '[vitest-browser-angular] Injector is undefined. Cannot inject dependencies.');
